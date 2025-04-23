@@ -145,4 +145,16 @@ public class XashActivity extends SDLActivity {
         if (argv == null) argv = "-console -log";
         return argv.split(" ");
     }
+
+    public static int openURL(String url) {
+        try {
+            if (!url.startsWith("http://") && !url.startsWith("https://"))
+                url = "http://" + url;
+            activity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
+        return 0;
+    }
 }
