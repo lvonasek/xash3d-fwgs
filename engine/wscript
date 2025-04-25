@@ -182,7 +182,6 @@ def build(bld):
 
 	# VR support
 	includes += ['vr', '../3rdparty/openxr/include']
-	libs += '../3rdparty/openxr/lib/android/arm64-v8a/libopenxr_loader.so'
 	source += bld.path.ant_glob(['vr/*.c'])
 
 	if bld.env.SERVER:
@@ -240,4 +239,6 @@ def build(bld):
 			title_id = 'XASH10000',
 			app_name = 'xash3d-fwgs',
 			rpath = bld.env.DEFAULT_RPATH,
+			lib=['GLESv3', 'EGL', 'openxr_loader'],
+			libpath=['../3rdparty/openxr/lib/android/arm64-v8a']
 		)

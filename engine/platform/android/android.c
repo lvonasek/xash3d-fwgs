@@ -27,6 +27,8 @@ GNU General Public License for more details.
 #include <jni.h>
 #include <SDL.h>
 
+#include "VrBase.h"
+
 struct jnimethods_s
 {
 	JNIEnv *env;
@@ -53,6 +55,12 @@ void Android_Init( void )
 	SDL_SetHint( SDL_HINT_ANDROID_BLOCK_ON_PAUSE, "0" );
 	SDL_SetHint( SDL_HINT_ANDROID_BLOCK_ON_PAUSE_PAUSEAUDIO, "0" );
 	SDL_SetHint( SDL_HINT_ANDROID_TRAP_BACK_BUTTON, "1" );
+
+	//Init VR
+	ovrJava java;
+	java.ActivityObject = jni.activity;
+	(*jni.env)->GetJavaVM(jni.env, &java.Vm);
+	VR_Init(&java, "Xash", 1);
 }
 
 /*
