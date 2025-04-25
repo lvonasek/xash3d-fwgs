@@ -140,7 +140,7 @@ enum VRPlatformFlag {
 
 void VR_Init( void* system, const char* name, int version );
 void VR_Destroy( engine_t* engine );
-void VR_EnterVR( engine_t* engine, ovrEgl egl );
+void VR_EnterVR( engine_t* engine );
 void VR_LeaveVR( engine_t* engine );
 
 engine_t* VR_GetEngine( void );

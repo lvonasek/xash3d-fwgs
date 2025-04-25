@@ -38,8 +38,8 @@ void VR_InitRenderer( engine_t* engine, bool multiview );
 void VR_DestroyRenderer( engine_t* engine );
 
 bool VR_InitFrame( engine_t* engine );
-void VR_BeginFrame( engine_t* engine );
-void VR_EndFrame( engine_t* engine );
+void VR_BeginFrame( engine_t* engine, int fboIndex );
+void VR_EndFrame( engine_t* engine, int fboIndex );
 void VR_FinishFrame( engine_t* engine );
 
 int VR_GetConfig( enum VRConfig config );

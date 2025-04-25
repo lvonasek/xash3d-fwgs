@@ -294,7 +294,7 @@ bool VR_InitFrame( engine_t* engine ) {
 	return true;
 }
 
-void VR_BeginFrame( engine_t* engine ) {
+void VR_BeginFrame( engine_t* engine, int fboIndex ) {
 	// Get the HMD pose, predicted for the middle of the time period during which
 	// the new eye images will be displayed. The number of frames predicted ahead
 	// depends on the pipeline depth of the engine and the synthesis rate.
@@ -304,11 +304,11 @@ void VR_BeginFrame( engine_t* engine ) {
 	beginFrameDesc.next = NULL;
 	OXR(xrBeginFrame(engine->appState.Session, &beginFrameDesc));
 
-	ovrFramebuffer_Acquire(&engine->appState.Renderer.FrameBuffer);
-	ovrFramebuffer_SetCurrent(&engine->appState.Renderer.FrameBuffer);
+	ovrFramebuffer_Acquire(&engine->appState.Renderer.FrameBuffer[fboIndex]);
+	ovrFramebuffer_SetCurrent(&engine->appState.Renderer.FrameBuffer[fboIndex]);
 }
 
-void VR_EndFrame( engine_t* engine ) {
+void VR_EndFrame( engine_t* engine, int fboIndex ) {
 	VR_BindFramebuffer(engine);
 
 	// Show mouse cursor
@@ -322,8 +322,8 @@ void VR_EndFrame( engine_t* engine ) {
 		ovrRenderer_MouseCursor(&engine->appState.Renderer, x, y, sx, sy);
 	}
 
-	ovrFramebuffer_Resolve(&engine->appState.Renderer.FrameBuffer);
-	ovrFramebuffer_Release(&engine->appState.Renderer.FrameBuffer);
+	ovrFramebuffer_Resolve(&engine->appState.Renderer.FrameBuffer[fboIndex]);
+	ovrFramebuffer_Release(&engine->appState.Renderer.FrameBuffer[fboIndex]);
 	ovrFramebuffer_SetNone();
 }
 

@@ -138,7 +138,7 @@ void VR_Destroy( engine_t* engine ) {
 	}
 }
 
-void VR_EnterVR( engine_t* engine, ovrEgl egl ) {
+void VR_EnterVR( engine_t* engine ) {
 
 	if (engine->appState.Session) {
 		ALOGE("VR_EnterVR called with existing session");
@@ -151,10 +151,9 @@ void VR_EnterVR( engine_t* engine, ovrEgl egl ) {
 	XrGraphicsBindingOpenGLESAndroidKHR graphicsBindingGL = {};
 	memset(&sessionCreateInfo, 0, sizeof(sessionCreateInfo));
 	graphicsBindingGL.type = XR_TYPE_GRAPHICS_BINDING_OPENGL_ES_ANDROID_KHR;
-	graphicsBindingGL.next = NULL;
-	graphicsBindingGL.display = egl.Display;
-	graphicsBindingGL.config = egl.Config;
-	graphicsBindingGL.context = egl.Context;
+	graphicsBindingGL.display = eglGetCurrentDisplay();
+	graphicsBindingGL.config = NULL;
+	graphicsBindingGL.context = eglGetCurrentContext();
 	sessionCreateInfo.next = &graphicsBindingGL;
 #endif
 	sessionCreateInfo.type = XR_TYPE_SESSION_CREATE_INFO;
