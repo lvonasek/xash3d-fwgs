@@ -51,7 +51,6 @@ void Android_Init( void )
 	jni.openURL = (*jni.env)->GetStaticMethodID( jni.env, jni.actcls, "openURL", "(Ljava/lang/String;)I");
 
 	SDL_SetHint( SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight" );
-	SDL_SetHint( SDL_HINT_JOYSTICK_HIDAPI_STEAM, "1" );
 	SDL_SetHint( SDL_HINT_ANDROID_BLOCK_ON_PAUSE, "0" );
 	SDL_SetHint( SDL_HINT_ANDROID_BLOCK_ON_PAUSE_PAUSEAUDIO, "0" );
 	SDL_SetHint( SDL_HINT_ANDROID_TRAP_BACK_BUTTON, "1" );
