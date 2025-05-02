@@ -55,6 +55,14 @@ void Android_Init( void )
 	SDL_SetHint( SDL_HINT_ANDROID_BLOCK_ON_PAUSE_PAUSEAUDIO, "0" );
 	SDL_SetHint( SDL_HINT_ANDROID_TRAP_BACK_BUTTON, "1" );
 
+	//Set VR platform flags
+	char* manufacturer = getenv("xr_manufacturer");
+	if (strcmp(manufacturer, "PICO") == 0) {
+		VR_SetPlatformFLag(VR_PLATFORM_CONTROLLER_PICO, true);
+	} else {
+		VR_SetPlatformFLag(VR_PLATFORM_CONTROLLER_QUEST, true);
+	}
+
 	//Init VR
 	ovrJava java;
 	java.ActivityObject = jni.activity;

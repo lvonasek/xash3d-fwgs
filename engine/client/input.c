@@ -21,6 +21,9 @@ GNU General Public License for more details.
 
 #if XASH_SDL
 #include <SDL.h>
+#include <VrRenderer.h>
+#include <VrInput.h>
+
 #endif
 
 #include "platform/platform.h"
@@ -329,7 +332,7 @@ static void IN_MouseMove( void )
 {
 	int x, y;
 
-	if( !in_mouseinitialized )
+	/*if( !in_mouseinitialized )
 		return;
 
 	if( Touch_WantVisibleCursor( ))
@@ -337,10 +340,27 @@ static void IN_MouseMove( void )
 		// touch emulation overrides all input
 		Touch_KeyEvent( 0, 0 );
 		return;
-	}
+	}*/
 
 	// find mouse movement
-	Platform_GetMousePos( &x, &y );
+	//Platform_GetMousePos( &x, &y );
+
+	// VR get cursor position on screen
+	XrPosef pose = IN_VRGetPose(1);
+	XrVector3f angles = XrQuaternionf_ToEulerAngles(pose.orientation);
+	float width = (float)VR_GetConfig(VR_CONFIG_VIEWPORT_WIDTH);
+	float height = (float)VR_GetConfig(VR_CONFIG_VIEWPORT_HEIGHT);
+	float supersampling = VR_GetConfigFloat(VR_CONFIG_VIEWPORT_SUPERSAMPLING);
+	float cx = width / 2;
+	float cy = height / 2;
+	float speed = (cx + cy) / 2;
+	float mx = cx - tan(ToRadians(angles.y - VR_GetConfigFloat(VR_CONFIG_MENU_YAW))) * speed;
+	float my = cy + tan(ToRadians(angles.x)) * speed * VR_GetConfigFloat(VR_CONFIG_CANVAS_ASPECT);
+	x = supersampling > 0.1f ? mx * supersampling : mx;
+	y = supersampling > 0.1f ? my * supersampling : my;
+	VR_SetConfig(VR_CONFIG_MOUSE_X, x);
+	VR_SetConfig(VR_CONFIG_MOUSE_Y, height - y);
+	VR_SetConfig(VR_CONFIG_MOUSE_SIZE, 8);
 
 	VGui_MouseMove( x, y );
 
