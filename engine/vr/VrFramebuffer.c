@@ -393,7 +393,7 @@ bool ovrFramebuffer_Create(
 				// Create depth buffer.
 				GL(glGenRenderbuffers(1, &frameBuffer->DepthBuffers[i]));
 				GL(glBindRenderbuffer(GL_RENDERBUFFER, frameBuffer->DepthBuffers[i]));
-				GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, width, height));
+				GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height));
 				GL(glBindRenderbuffer(GL_RENDERBUFFER, 0));
 
 				// Create the frame buffer.

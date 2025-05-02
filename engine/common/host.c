@@ -802,6 +802,8 @@ void Host_Frame( double time )
 	}
 	if (!VR_GetConfig(VR_CONFIG_VIEWPORT_VALID)) {
 		VR_InitRenderer(engine, false);
+		VR_SetConfigFloat(VR_CONFIG_CANVAS_ASPECT, 1);
+		VR_SetConfigFloat(VR_CONFIG_CANVAS_DISTANCE, 5);
 		VR_SetConfig(VR_CONFIG_VIEWPORT_VALID, true);
 	}
 	if (!VR_InitFrame(engine)) {
