@@ -321,8 +321,6 @@ void IN_DeactivateMouse( void )
 	in_mouseactive = false;
 }
 
-
-
 /*
 ================
 IN_MouseMove
@@ -332,7 +330,7 @@ static void IN_MouseMove( void )
 {
 	int x, y;
 
-	/*if( !in_mouseinitialized )
+	if( !in_mouseinitialized )
 		return;
 
 	if( Touch_WantVisibleCursor( ))
@@ -340,27 +338,10 @@ static void IN_MouseMove( void )
 		// touch emulation overrides all input
 		Touch_KeyEvent( 0, 0 );
 		return;
-	}*/
+	}
 
 	// find mouse movement
-	//Platform_GetMousePos( &x, &y );
-
-	// VR get cursor position on screen
-	XrPosef pose = IN_VRGetPose(1);
-	XrVector3f angles = XrQuaternionf_ToEulerAngles(pose.orientation);
-	float width = (float)VR_GetConfig(VR_CONFIG_VIEWPORT_WIDTH);
-	float height = (float)VR_GetConfig(VR_CONFIG_VIEWPORT_HEIGHT);
-	float supersampling = VR_GetConfigFloat(VR_CONFIG_VIEWPORT_SUPERSAMPLING);
-	float cx = width / 2;
-	float cy = height / 2;
-	float speed = (cx + cy) / 2;
-	float mx = cx - tan(ToRadians(angles.y - VR_GetConfigFloat(VR_CONFIG_MENU_YAW))) * speed;
-	float my = cy + tan(ToRadians(angles.x)) * speed * VR_GetConfigFloat(VR_CONFIG_CANVAS_ASPECT);
-	x = supersampling > 0.1f ? mx * supersampling : mx;
-	y = supersampling > 0.1f ? my * supersampling : my;
-	VR_SetConfig(VR_CONFIG_MOUSE_X, x);
-	VR_SetConfig(VR_CONFIG_MOUSE_Y, height - y);
-	VR_SetConfig(VR_CONFIG_MOUSE_SIZE, 8);
+	Platform_GetMousePos( &x, &y );
 
 	VGui_MouseMove( x, y );
 
@@ -653,7 +634,64 @@ Called every frame, even if not generating commands
 */
 void Host_InputFrame( void )
 {
-	IN_Commands();
+	//IN_Commands();
 
-	IN_MouseMove();
+	//IN_MouseMove();
+
+	// VR get cursor position on screen
+	XrPosef pose = IN_VRGetPose(1);
+	XrVector3f angles = XrQuaternionf_ToEulerAngles(pose.orientation);
+	float width = (float)VR_GetConfig(VR_CONFIG_VIEWPORT_WIDTH);
+	float height = (float)VR_GetConfig(VR_CONFIG_VIEWPORT_HEIGHT);
+	float supersampling = VR_GetConfigFloat(VR_CONFIG_VIEWPORT_SUPERSAMPLING);
+	float cx = width / 2;
+	float cy = height / 2;
+	float speed = (cx + cy) / 2;
+	float mx = cx - tan(ToRadians(angles.y - VR_GetConfigFloat(VR_CONFIG_MENU_YAW))) * speed;
+	float my = cy + tan(ToRadians(angles.x)) * speed * VR_GetConfigFloat(VR_CONFIG_CANVAS_ASPECT);
+	float touchX = supersampling > 0.1f ? mx * supersampling : mx;
+	float touchY = supersampling > 0.1f ? my * supersampling : my;
+
+	// Show cursor
+	VR_SetConfig(VR_CONFIG_MOUSE_X, touchX);
+	VR_SetConfig(VR_CONFIG_MOUSE_Y, height - touchY);
+	VR_SetConfig(VR_CONFIG_MOUSE_SIZE, 8);
+
+	// Get event type
+	touchEventType t = event_motion;
+	bool down = IN_VRGetButtonState(1) & ovrButton_Trigger;
+	static bool lastDown = false;
+	if (down) {
+		t = event_down;
+	} else if (lastDown) {
+		t = event_up;
+	}
+	lastDown = down;
+
+	// Escape key
+	bool escape = IN_VRGetButtonState(0) & ovrButton_Enter;
+	static bool lastEscape = false;
+	if (escape && !lastEscape) {
+		Key_Event(K_ESCAPE, true);
+		Key_Event(K_ESCAPE, false);
+	}
+	lastEscape = escape;
+
+	// Send the input event as a touch
+	static float initialTouchX = 0;
+	static float initialTouchY = 0;
+	touchX /= (float)refState.width;
+	touchY /= (float)refState.height;
+	IN_TouchEvent(t, 0, touchX, touchY, initialTouchX - touchX, initialTouchY - touchY);
+	initialTouchX = touchX;
+	initialTouchY = touchY;
+
+	// Movement
+	if( cls.key_dest == key_game )
+	{
+		XrVector2f left = IN_VRGetJoystickState(0);
+		XrVector2f right = IN_VRGetJoystickState(1);
+		clgame.dllFuncs.pfnLookEvent( -right.x, -right.y );
+		clgame.dllFuncs.pfnMoveEvent( left.y, left.x );
+	}
 }
