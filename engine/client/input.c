@@ -625,6 +625,13 @@ static void IN_Commands( void )
 	IN_CheckMouseState( in_mouseactive );
 }
 
+void sendButtonAction(const char* action)
+{
+	char command[256];
+	Q_snprintf( command, sizeof( command ), "%s\n", action );
+	Cbuf_AddText( command );
+}
+
 /*
 ==================
 Host_InputFrame
@@ -659,7 +666,8 @@ void Host_InputFrame( void )
 
 	// Get event type
 	touchEventType t = event_motion;
-	bool down = IN_VRGetButtonState(1) & ovrButton_Trigger;
+	int rbuttons = IN_VRGetButtonState(1);
+	bool down = rbuttons & ovrButton_Trigger;
 	static bool lastDown = false;
 	if (down) {
 		t = event_down;
@@ -676,6 +684,42 @@ void Host_InputFrame( void )
 		Key_Event(K_ESCAPE, false);
 	}
 	lastEscape = escape;
+
+	// Reload
+	static bool reloadDown = false;
+	if (rbuttons & ovrButton_GripTrigger) {
+		if (!reloadDown) {
+			sendButtonAction("+reload");
+			reloadDown = true;
+		}
+	} else if (reloadDown) {
+		sendButtonAction("-reload");
+		reloadDown = false;
+	}
+
+	// Jump
+	static bool jumoDown = false;
+	if (rbuttons & ovrButton_B) {
+		if (!jumoDown) {
+			sendButtonAction("+jump");
+			jumoDown = true;
+		}
+	} else if (jumoDown) {
+		sendButtonAction("-jump");
+		jumoDown = false;
+	}
+
+	// Duck
+	static bool duckDown = false;
+	if (rbuttons & ovrButton_A) {
+		if (!duckDown) {
+			sendButtonAction("+duck");
+			duckDown = true;
+		}
+	} else if (duckDown) {
+		sendButtonAction("-duck");
+		duckDown = false;
+	}
 
 	// Send the input event as a touch
 	static float initialTouchX = 0;
