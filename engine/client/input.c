@@ -694,15 +694,6 @@ void Host_InputFrame( void )
 	initialTouchX = touchX;
 	initialTouchY = touchY;
 
-	// Movement
-	if( cls.key_dest == key_game )
-	{
-		XrVector2f left = IN_VRGetJoystickState(0);
-		XrVector2f right = IN_VRGetJoystickState(1);
-		clgame.dllFuncs.pfnLookEvent( -right.x, -right.y );
-		clgame.dllFuncs.pfnMoveEvent( left.y, left.x );
-	}
-
 	// Escape key
 	int lbuttons = IN_VRGetButtonState(0);
 	bool escape = lbuttons & ovrButton_Enter;
@@ -713,8 +704,9 @@ void Host_InputFrame( void )
 	}
 	lastEscape = escape;
 
-	// Game key mapping
+	// In-game input
 	if( cls.key_dest == key_game ) {
+		// Button mapping
 		static int lastlbuttons = 0;
 		mapKey(ovrButton_X, lbuttons, lastlbuttons, "drop");
 		mapKey(ovrButton_Y, lbuttons, lastlbuttons, "nightvision");
@@ -729,5 +721,29 @@ void Host_InputFrame( void )
 		mapKey(ovrButton_Joystick, rbuttons, lastrbuttons, "+attack2");
 		mapKey(ovrButton_GripTrigger, rbuttons, lastrbuttons, "+reload");
 		lastrbuttons = rbuttons;
+
+		// Movement
+		XrVector2f left = IN_VRGetJoystickState(0);
+		XrVector2f right = IN_VRGetJoystickState(1);
+		bool snapTurnDown = fabs(right.x) > 0.5;
+		static bool lastSnapTurnDown = false;
+		if (snapTurnDown && !lastSnapTurnDown) {
+			clgame.dllFuncs.pfnLookEvent( right.x > 0 ? -15 : 15, 0 );
+		}
+		lastSnapTurnDown = snapTurnDown;
+		clgame.dllFuncs.pfnMoveEvent( left.y, left.x );
+
+		// Weapon switch
+		bool weaponChangeDown = fabs(right.y) > 0.5;
+		static bool lastWeaponChangeDown = false;
+		if (weaponChangeDown && !lastWeaponChangeDown) {
+			int b = right.y > 0 ? K_MWHEELUP : K_MWHEELDOWN;
+			Key_Event( b, true );
+			Key_Event( b, false );
+			Cbuf_AddText( "+attack\n" );
+		} else if (!weaponChangeDown && lastWeaponChangeDown) {
+			Cbuf_AddText( "-attack\n" );
+		}
+		lastWeaponChangeDown = weaponChangeDown;
 	}
 }
