@@ -625,11 +625,20 @@ static void IN_Commands( void )
 	IN_CheckMouseState( in_mouseactive );
 }
 
-void sendButtonAction(const char* action)
+void mapKey(int button, int currentButtons, int lastButtons, const char* action)
 {
-	char command[256];
-	Q_snprintf( command, sizeof( command ), "%s\n", action );
-	Cbuf_AddText( command );
+	bool down = currentButtons & button;
+	bool wasDown = lastButtons & button;
+	if (down && !wasDown) {
+		char command[256];
+		Q_snprintf( command, sizeof( command ), "%s\n", action );
+		Cbuf_AddText( command );
+	} else if (!down && wasDown && (action[0] == '+')) {
+		char command[256];
+		Q_snprintf( command, sizeof( command ), "%s\n", action );
+		command[0] = '-';
+		Cbuf_AddText( command );
+	}
 }
 
 /*
@@ -669,57 +678,12 @@ void Host_InputFrame( void )
 	int rbuttons = IN_VRGetButtonState(1);
 	bool down = rbuttons & ovrButton_Trigger;
 	static bool lastDown = false;
-	if (down) {
+	if (down && !lastDown) {
 		t = event_down;
-	} else if (lastDown) {
+	} else if (!down && lastDown) {
 		t = event_up;
 	}
 	lastDown = down;
-
-	// Escape key
-	bool escape = IN_VRGetButtonState(0) & ovrButton_Enter;
-	static bool lastEscape = false;
-	if (escape && !lastEscape) {
-		Key_Event(K_ESCAPE, true);
-		Key_Event(K_ESCAPE, false);
-	}
-	lastEscape = escape;
-
-	// Reload
-	static bool reloadDown = false;
-	if (rbuttons & ovrButton_GripTrigger) {
-		if (!reloadDown) {
-			sendButtonAction("+reload");
-			reloadDown = true;
-		}
-	} else if (reloadDown) {
-		sendButtonAction("-reload");
-		reloadDown = false;
-	}
-
-	// Jump
-	static bool jumoDown = false;
-	if (rbuttons & ovrButton_B) {
-		if (!jumoDown) {
-			sendButtonAction("+jump");
-			jumoDown = true;
-		}
-	} else if (jumoDown) {
-		sendButtonAction("-jump");
-		jumoDown = false;
-	}
-
-	// Duck
-	static bool duckDown = false;
-	if (rbuttons & ovrButton_A) {
-		if (!duckDown) {
-			sendButtonAction("+duck");
-			duckDown = true;
-		}
-	} else if (duckDown) {
-		sendButtonAction("-duck");
-		duckDown = false;
-	}
 
 	// Send the input event as a touch
 	static float initialTouchX = 0;
@@ -737,5 +701,33 @@ void Host_InputFrame( void )
 		XrVector2f right = IN_VRGetJoystickState(1);
 		clgame.dllFuncs.pfnLookEvent( -right.x, -right.y );
 		clgame.dllFuncs.pfnMoveEvent( left.y, left.x );
+	}
+
+	// Escape key
+	int lbuttons = IN_VRGetButtonState(0);
+	bool escape = lbuttons & ovrButton_Enter;
+	static bool lastEscape = false;
+	if (escape && !lastEscape) {
+		Key_Event(K_ESCAPE, true);
+		Key_Event(K_ESCAPE, false);
+	}
+	lastEscape = escape;
+
+	// Game key mapping
+	if( cls.key_dest == key_game ) {
+		static int lastlbuttons = 0;
+		mapKey(ovrButton_X, lbuttons, lastlbuttons, "drop");
+		mapKey(ovrButton_Y, lbuttons, lastlbuttons, "nightvision");
+		mapKey(ovrButton_Trigger, lbuttons, lastlbuttons, "+use");
+		mapKey(ovrButton_Trigger, lbuttons, lastlbuttons, "impulse 201");
+		mapKey(ovrButton_Joystick, lbuttons, lastlbuttons, "exec touch/cmd/cmd");
+		mapKey(ovrButton_GripTrigger, lbuttons, lastlbuttons, "buy");
+		static int lastrbuttons = 0;
+		mapKey(ovrButton_A, rbuttons, lastrbuttons, "+duck");
+		mapKey(ovrButton_B, rbuttons, lastrbuttons, "+jump");
+		mapKey(ovrButton_Trigger, rbuttons, lastrbuttons, "+attack");
+		mapKey(ovrButton_Joystick, rbuttons, lastrbuttons, "+attack2");
+		mapKey(ovrButton_GripTrigger, rbuttons, lastrbuttons, "+reload");
+		lastrbuttons = rbuttons;
 	}
 }
