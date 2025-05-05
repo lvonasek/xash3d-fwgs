@@ -61,7 +61,9 @@ void Android_Init( void )
 		VR_SetPlatformFLag(VR_PLATFORM_CONTROLLER_PICO, true);
 	} else {
 		VR_SetPlatformFLag(VR_PLATFORM_CONTROLLER_QUEST, true);
+		VR_SetPlatformFLag(VR_PLATFORM_VIEWPORT_UNCENTERED, true);
 	}
+	VR_SetPlatformFLag(VR_PLATFORM_VIEWPORT_SQUARE, true);
 
 	//Init VR
 	ovrJava java;

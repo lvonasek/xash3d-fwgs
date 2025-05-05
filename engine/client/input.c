@@ -690,7 +690,10 @@ void Host_InputFrame( void )
 	static float initialTouchY = 0;
 	touchX /= (float)refState.width;
 	touchY /= (float)refState.height;
-	IN_TouchEvent(t, 0, touchX, touchY, initialTouchX - touchX, initialTouchY - touchY);
+	bool gameMode = !host.mouse_visible && cls.state == ca_active && cls.key_dest == key_game;
+	if (!gameMode) {
+		IN_TouchEvent(t, 0, touchX, touchY, initialTouchX - touchX, initialTouchY - touchY);
+	}
 	initialTouchX = touchX;
 	initialTouchY = touchY;
 
@@ -705,14 +708,13 @@ void Host_InputFrame( void )
 	lastEscape = escape;
 
 	// In-game input
-	if( cls.key_dest == key_game ) {
+	if( gameMode ) {
 		// Button mapping
 		static int lastlbuttons = 0;
 		mapKey(ovrButton_X, lbuttons, lastlbuttons, "drop");
 		mapKey(ovrButton_Y, lbuttons, lastlbuttons, "nightvision");
 		mapKey(ovrButton_Trigger, lbuttons, lastlbuttons, "+use");
 		mapKey(ovrButton_Trigger, lbuttons, lastlbuttons, "+speed");
-		mapKey(ovrButton_Trigger, lbuttons, lastlbuttons, "impulse 201");
 		mapKey(ovrButton_Joystick, lbuttons, lastlbuttons, "exec touch/cmd/cmd");
 		mapKey(ovrButton_GripTrigger, lbuttons, lastlbuttons, "buy");
 		lastlbuttons = lbuttons;
@@ -729,9 +731,17 @@ void Host_InputFrame( void )
 		XrVector2f right = IN_VRGetJoystickState(1);
 		bool snapTurnDown = fabs(right.x) > 0.5;
 		static bool lastSnapTurnDown = false;
+		static float lastYaw = 0;
+		static float lastPitch = 0;
+		XrVector3f euler = XrQuaternionf_ToEulerAngles(VR_GetView(0).orientation);
+		float yaw = euler.y - lastYaw;
+		float pitch = euler.x - lastPitch;
+		lastYaw = euler.y;
+		lastPitch = euler.x;
 		if (snapTurnDown && !lastSnapTurnDown) {
-			clgame.dllFuncs.pfnLookEvent( right.x > 0 ? -15 : 15, 0 );
+			yaw += right.x > 0 ? -15 : 15;
 		}
+		clgame.dllFuncs.pfnLookEvent( yaw, pitch );
 		lastSnapTurnDown = snapTurnDown;
 		left.x = fabs(left.x) < 0.5 ? 0 : (left.x > 0 ? 1.0f : -1.0f);
 		left.y = fabs(left.y) < 0.5 ? 0 : (left.y > 0 ? 1.0f : -1.0f);

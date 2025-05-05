@@ -806,6 +806,8 @@ void Host_Frame( double time )
 		VR_SetConfigFloat(VR_CONFIG_CANVAS_DISTANCE, 5);
 		VR_SetConfig(VR_CONFIG_VIEWPORT_VALID, true);
 	}
+	bool gameMode = !host.mouse_visible && cls.state == ca_active && cls.key_dest == key_game;
+	VR_SetConfig(VR_CONFIG_MODE, gameMode ? VR_MODE_MONO_6DOF : VR_MODE_MONO_SCREEN);
 	if (!VR_InitFrame(engine)) {
 		return;
 	}
