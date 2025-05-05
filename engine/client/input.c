@@ -711,9 +711,11 @@ void Host_InputFrame( void )
 		mapKey(ovrButton_X, lbuttons, lastlbuttons, "drop");
 		mapKey(ovrButton_Y, lbuttons, lastlbuttons, "nightvision");
 		mapKey(ovrButton_Trigger, lbuttons, lastlbuttons, "+use");
+		mapKey(ovrButton_Trigger, lbuttons, lastlbuttons, "+speed");
 		mapKey(ovrButton_Trigger, lbuttons, lastlbuttons, "impulse 201");
 		mapKey(ovrButton_Joystick, lbuttons, lastlbuttons, "exec touch/cmd/cmd");
 		mapKey(ovrButton_GripTrigger, lbuttons, lastlbuttons, "buy");
+		lastlbuttons = lbuttons;
 		static int lastrbuttons = 0;
 		mapKey(ovrButton_A, rbuttons, lastrbuttons, "+duck");
 		mapKey(ovrButton_B, rbuttons, lastrbuttons, "+jump");
@@ -731,6 +733,8 @@ void Host_InputFrame( void )
 			clgame.dllFuncs.pfnLookEvent( right.x > 0 ? -15 : 15, 0 );
 		}
 		lastSnapTurnDown = snapTurnDown;
+		left.x = fabs(left.x) < 0.5 ? 0 : (left.x > 0 ? 1.0f : -1.0f);
+		left.y = fabs(left.y) < 0.5 ? 0 : (left.y > 0 ? 1.0f : -1.0f);
 		clgame.dllFuncs.pfnMoveEvent( left.y, left.x );
 
 		// Weapon switch
