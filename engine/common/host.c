@@ -807,7 +807,7 @@ void Host_Frame( double time )
 		VR_SetConfig(VR_CONFIG_VIEWPORT_VALID, true);
 	}
 	bool gameMode = !host.mouse_visible && cls.state == ca_active && cls.key_dest == key_game;
-	VR_SetConfig(VR_CONFIG_MODE, gameMode ? VR_MODE_MONO_6DOF : VR_MODE_MONO_SCREEN);
+	VR_SetConfig(VR_CONFIG_MODE, gameMode ? VR_MODE_STEREO_6DOF : VR_MODE_MONO_SCREEN);
 	if (!VR_InitFrame(engine)) {
 		return;
 	}
@@ -828,11 +828,13 @@ void Host_Frame( double time )
 	Host_ClientBegin (); // begin client
 	Host_GetCommands (); // dedicated in
 
-	VR_BeginFrame(engine, 0);
-	Host_ServerFrame (); // server frame
-	Host_ClientFrame (); // client frame
-	VR_EndFrame(engine, 0);
-	VR_FinishFrame(engine);
+	for (int eye = 0; eye < ovrMaxNumEyes; eye++) {
+		VR_BeginFrame(engine, eye);
+		Host_ServerFrame (); // server frame
+		Host_ClientFrame (); // client frame
+		VR_EndFrame(engine, eye);
+		VR_FinishFrame(engine);
+	}
 
 	HTTP_Run();			 // both server and client
 
