@@ -641,6 +641,8 @@ void mapKey(int button, int currentButtons, int lastButtons, const char* action)
 	}
 }
 
+extern bool sdl_keyboard_requested;
+
 /*
 ==================
 Host_InputFrame
@@ -669,9 +671,10 @@ void Host_InputFrame( void )
 	float touchY = supersampling > 0.1f ? my * supersampling : my;
 
 	// Show cursor
+	bool cursorActive = IN_VRIsActive(1);
 	VR_SetConfig(VR_CONFIG_MOUSE_X, touchX);
 	VR_SetConfig(VR_CONFIG_MOUSE_Y, height - touchY);
-	VR_SetConfig(VR_CONFIG_MOUSE_SIZE, 8);
+	VR_SetConfig(VR_CONFIG_MOUSE_SIZE, cursorActive ? 8 : 0);
 
 	// Get event type
 	touchEventType t = event_motion;
@@ -691,8 +694,13 @@ void Host_InputFrame( void )
 	touchX /= (float)refState.width;
 	touchY /= (float)refState.height;
 	bool gameMode = !host.mouse_visible && cls.state == ca_active && cls.key_dest == key_game;
-	if (!gameMode) {
+	if (!gameMode && cursorActive) {
 		IN_TouchEvent(t, 0, touchX, touchY, initialTouchX - touchX, initialTouchY - touchY);
+		if (t == event_up && sdl_keyboard_requested) {
+			IN_TouchEvent(event_motion, 0, touchX, touchY, initialTouchX - touchX, initialTouchY - touchY);
+			sdl_keyboard_requested = false;
+			SDL_StartTextInput();
+		}
 	}
 	initialTouchX = touchX;
 	initialTouchY = touchY;
@@ -728,24 +736,28 @@ void Host_InputFrame( void )
 
 		// Movement
 		XrVector2f left = IN_VRGetJoystickState(0);
+		clgame.dllFuncs.pfnMoveEvent( left.y, left.x );
 		XrVector2f right = IN_VRGetJoystickState(1);
 		bool snapTurnDown = fabs(right.x) > 0.5;
 		static bool lastSnapTurnDown = false;
 		static float lastYaw = 0;
 		static float lastPitch = 0;
 		XrVector3f euler = XrQuaternionf_ToEulerAngles(VR_GetView(0).orientation);
+		euler.x /= 3.0f;
+		euler.y /= 3.0f;
 		float yaw = euler.y - lastYaw;
 		float pitch = euler.x - lastPitch;
+		float diff = lastPitch - Cvar_VariableValue("vr_player_pitch") / 3.0f;
+		if ((fabs(diff) > 1) && (Cvar_VariableValue("vr_fov_zoom") < 1.1f)) {
+			pitch += diff + 0.02f;
+		}
 		lastYaw = euler.y;
 		lastPitch = euler.x;
 		if (snapTurnDown && !lastSnapTurnDown) {
 			yaw += right.x > 0 ? -15 : 15;
 		}
-		clgame.dllFuncs.pfnLookEvent( yaw, pitch );
 		lastSnapTurnDown = snapTurnDown;
-		left.x = fabs(left.x) < 0.5 ? 0 : (left.x > 0 ? 1.0f : -1.0f);
-		left.y = fabs(left.y) < 0.5 ? 0 : (left.y > 0 ? 1.0f : -1.0f);
-		clgame.dllFuncs.pfnMoveEvent( left.y, left.x );
+		clgame.dllFuncs.pfnLookEvent( yaw, pitch );
 
 		// Weapon switch
 		bool weaponChangeDown = fabs(right.y) > 0.5;
