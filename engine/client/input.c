@@ -716,6 +716,8 @@ void Host_InputFrame( void )
 	lastEscape = escape;
 
 	// In-game input
+	XrPosef hmd = VR_GetView(0);
+	static float hmdAltitude = 0;
 	if( gameMode ) {
 		// Button mapping
 		static int lastlbuttons = 0;
@@ -735,14 +737,29 @@ void Host_InputFrame( void )
 		lastrbuttons = rbuttons;
 
 		// Movement
+		Cvar_SetValue("vr_hmd_offset",  hmd.position.y - hmdAltitude);
+		static float lastHmdX = 0;
+		static float lastHmdY = 0;
+		XrVector3f euler = XrQuaternionf_ToEulerAngles(hmd.orientation);
+		float s = sin(ToRadians(euler.y));
+		float c = cos(ToRadians(euler.y));
 		XrVector2f left = IN_VRGetJoystickState(0);
+		hmd.position = XrVector3f_ScalarMultiply(hmd.position, Cvar_VariableValue("vr_worldscale"));
+		hmd.position = XrVector3f_ScalarMultiply(hmd.position, 1.0f / 3.0f);
+		float hmdX = hmd.position.x * c - hmd.position.z * s;
+		float hmdY = hmd.position.x * s + hmd.position.z * c;
+		left.x += hmdX - lastHmdX;
+		left.y -= hmdY - lastHmdY;
+		lastHmdX = hmdX;
+		lastHmdY = hmdY;
 		clgame.dllFuncs.pfnMoveEvent( left.y, left.x );
+
+		// Rotation
 		XrVector2f right = IN_VRGetJoystickState(1);
 		bool snapTurnDown = fabs(right.x) > 0.5;
 		static bool lastSnapTurnDown = false;
 		static float lastYaw = 0;
 		static float lastPitch = 0;
-		XrVector3f euler = XrQuaternionf_ToEulerAngles(VR_GetView(0).orientation);
 		euler.x /= 3.0f;
 		euler.y /= 3.0f;
 		float yaw = euler.y - lastYaw;
@@ -763,13 +780,17 @@ void Host_InputFrame( void )
 		bool weaponChangeDown = fabs(right.y) > 0.5;
 		static bool lastWeaponChangeDown = false;
 		if (weaponChangeDown && !lastWeaponChangeDown) {
-			int b = right.y > 0 ? K_MWHEELUP : K_MWHEELDOWN;
-			Key_Event( b, true );
-			Key_Event( b, false );
+			Cbuf_AddText( right.y > 0 ? "invnext\n" : "invprev\n" );
 			Cbuf_AddText( "+attack\n" );
 		} else if (!weaponChangeDown && lastWeaponChangeDown) {
 			Cbuf_AddText( "-attack\n" );
 		}
 		lastWeaponChangeDown = weaponChangeDown;
+	} else {
+		// Measure player when not in game mode
+		hmdAltitude = hmd.position.y;
+
+		// Zero movement when inactive
+		clgame.dllFuncs.pfnMoveEvent( 0, 0 );
 	}
 }

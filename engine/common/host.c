@@ -239,6 +239,7 @@ static void Sys_PrintUsage( const char *exename )
 }
 
 CVAR_DEFINE_AUTO( vr_fov_zoom, "0", FCVAR_MOVEVARS, "Zoom of the field of view" );
+CVAR_DEFINE_AUTO( vr_hmd_offset, "0", FCVAR_MOVEVARS, "HMD height" );
 CVAR_DEFINE_AUTO( vr_hmd_roll, "0", FCVAR_MOVEVARS, "HMD roll angle" );
 CVAR_DEFINE_AUTO( vr_player_pitch, "0", FCVAR_MOVEVARS, "Pinch angle of the player" );
 CVAR_DEFINE_AUTO( vr_stereo_side, "0", FCVAR_MOVEVARS, "Eye being drawn" );
@@ -1221,6 +1222,7 @@ static void Host_InitCommon( int argc, char **argv, const char *progname, qboole
 	Key_Init();
 
 	Cvar_RegisterVariable( &vr_fov_zoom );
+	Cvar_RegisterVariable( &vr_hmd_offset );
 	Cvar_RegisterVariable( &vr_hmd_roll );
 	Cvar_RegisterVariable( &vr_player_pitch );
 	Cvar_RegisterVariable( &vr_stereo_side );
