@@ -676,15 +676,29 @@ void Host_InputFrame( void )
 	VR_SetConfig(VR_CONFIG_MOUSE_Y, height - touchY);
 	VR_SetConfig(VR_CONFIG_MOUSE_SIZE, cursorActive ? 8 : 0);
 
+	// Deactivate temporary input when client restored focus
+	static struct timeval lastFocus;
+	if (host.status != HOST_NOFOCUS) {
+		gettimeofday(&lastFocus, NULL);
+	}
+	struct timeval currentTime;
+	gettimeofday(&currentTime, NULL);
+
 	// Get event type
 	touchEventType t = event_motion;
 	int rbuttons = IN_VRGetButtonState(1);
-	bool down = rbuttons & ovrButton_Trigger;
+	bool down = rbuttons & ovrButton_Trigger && (currentTime.tv_sec - lastFocus.tv_sec < 2);
+	bool gameMode = !host.mouse_visible && cls.state == ca_active && cls.key_dest == key_game;
+	static bool pressedInUI = false;
 	static bool lastDown = false;
 	if (down && !lastDown) {
 		t = event_down;
+		if (!gameMode) {
+			pressedInUI = true;
+		}
 	} else if (!down && lastDown) {
 		t = event_up;
+		pressedInUI = false;
 	}
 	lastDown = down;
 
@@ -693,7 +707,6 @@ void Host_InputFrame( void )
 	static float initialTouchY = 0;
 	touchX /= (float)refState.width;
 	touchY /= (float)refState.height;
-	bool gameMode = !host.mouse_visible && cls.state == ca_active && cls.key_dest == key_game;
 	if (!gameMode && cursorActive) {
 		IN_TouchEvent(t, 0, touchX, touchY, initialTouchX - touchX, initialTouchY - touchY);
 		if (t == event_up && sdl_keyboard_requested) {
@@ -715,10 +728,16 @@ void Host_InputFrame( void )
 	}
 	lastEscape = escape;
 
+	// Do not pass button actions which started in UI
+	if (gameMode && pressedInUI) {
+		lbuttons = 0;
+		rbuttons = 0;
+	}
+
 	// In-game input
 	XrPosef hmd = VR_GetView(0);
 	static float hmdAltitude = 0;
-	if( gameMode ) {
+	if (gameMode) {
 		// Button mapping
 		static int lastlbuttons = 0;
 		mapKey(ovrButton_X, lbuttons, lastlbuttons, "drop");
