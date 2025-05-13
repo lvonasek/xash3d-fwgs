@@ -815,9 +815,6 @@ void Host_Frame( double time )
 	}
 	bool gameMode = !host.mouse_visible && cls.state == ca_active && cls.key_dest == key_game;
 	VR_SetConfig(VR_CONFIG_MODE, gameMode ? VR_MODE_STEREO_6DOF : VR_MODE_MONO_SCREEN);
-	if (!VR_InitFrame(engine)) {
-		return;
-	}
 
 	double t1;
 
@@ -826,6 +823,10 @@ void Host_Frame( double time )
 		return;
 
 	t1 = Sys_DoubleTime();
+
+	if (!VR_InitFrame(engine)) {
+		return;
+	}
 
 	if( host.framecount == 0 )
 		Con_DPrintf( "Time to first frame: %.3f seconds\n", t1 - host.starttime );
