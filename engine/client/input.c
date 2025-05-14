@@ -656,6 +656,9 @@ void Host_InputFrame( void )
 
 	//IN_MouseMove();
 
+	// Do not allow touch controls in VR
+	Cvar_SetValue( "touch_enable", 0 );
+
 	// VR get cursor position on screen
 	XrPosef pose = IN_VRGetPose(1);
 	XrVector3f angles = XrQuaternionf_ToEulerAngles(pose.orientation);
@@ -764,7 +767,6 @@ void Host_InputFrame( void )
 		float c = cos(ToRadians(euler.y));
 		XrVector2f left = IN_VRGetJoystickState(0);
 		hmd.position = XrVector3f_ScalarMultiply(hmd.position, Cvar_VariableValue("vr_worldscale"));
-		hmd.position = XrVector3f_ScalarMultiply(hmd.position, 1.0f / 3.0f);
 		float hmdX = hmd.position.x * c - hmd.position.z * s;
 		float hmdY = hmd.position.x * s + hmd.position.z * c;
 		left.x += hmdX - lastHmdX;
@@ -779,18 +781,16 @@ void Host_InputFrame( void )
 		static bool lastSnapTurnDown = false;
 		static float lastYaw = 0;
 		static float lastPitch = 0;
-		euler.x /= 3.0f;
-		euler.y /= 3.0f;
 		float yaw = euler.y - lastYaw;
 		float pitch = euler.x - lastPitch;
-		float diff = lastPitch - Cvar_VariableValue("vr_player_pitch") / 3.0f;
+		float diff = lastPitch - Cvar_VariableValue("vr_player_pitch");
 		if ((fabs(diff) > 1) && (Cvar_VariableValue("vr_fov_zoom") < 1.1f)) {
 			pitch += diff + 0.02f;
 		}
 		lastYaw = euler.y;
 		lastPitch = euler.x;
 		if (snapTurnDown && !lastSnapTurnDown) {
-			yaw += right.x > 0 ? -15 : 15;
+			yaw += right.x > 0 ? -45 : 45;
 		}
 		lastSnapTurnDown = snapTurnDown;
 		clgame.dllFuncs.pfnLookEvent( yaw, pitch );
