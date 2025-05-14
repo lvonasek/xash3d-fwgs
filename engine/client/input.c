@@ -657,7 +657,9 @@ void Host_InputFrame( void )
 	//IN_MouseMove();
 
 	// Do not allow touch controls in VR
-	Cvar_SetValue( "touch_enable", 0 );
+	if (Cvar_VariableValue("touch_enable") > 0) {
+		Cvar_SetValue( "touch_enable", 0 );
+	}
 
 	// VR get cursor position on screen
 	XrPosef pose = IN_VRGetPose(1);
