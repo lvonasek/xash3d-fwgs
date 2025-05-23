@@ -718,6 +718,7 @@ void Host_InputFrame( void )
 			IN_TouchEvent(event_motion, 0, touchX, touchY, initialTouchX - touchX, initialTouchY - touchY);
 			sdl_keyboard_requested = false;
 			SDL_StartTextInput();
+            Con_Printf("Lubos: Keyboard requested");
 		}
 	}
 	initialTouchX = touchX;
