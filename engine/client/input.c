@@ -772,8 +772,8 @@ void Host_InputFrame( void )
 		hmd.position = XrVector3f_ScalarMultiply(hmd.position, Cvar_VariableValue("vr_worldscale"));
 		float hmdX = hmd.position.x * c - hmd.position.z * s;
 		float hmdY = hmd.position.x * s + hmd.position.z * c;
-		left.x += hmdX - lastHmdX;
-		left.y -= hmdY - lastHmdY;
+		//left.x += hmdX - lastHmdX;
+		//left.y -= hmdY - lastHmdY;
 		lastHmdX = hmdX;
 		lastHmdY = hmdY;
 		clgame.dllFuncs.pfnMoveEvent( left.y, left.x );
