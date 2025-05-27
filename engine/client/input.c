@@ -762,7 +762,7 @@ void Host_InputFrame( void )
 		lastrbuttons = rbuttons;
 
 		// Movement
-		Cvar_SetValue("vr_hmd_offset",  hmd.position.y - hmdAltitude);
+		//Cvar_SetValue("vr_hmd_offset",  hmd.position.y - hmdAltitude);
 		static float lastHmdX = 0;
 		static float lastHmdY = 0;
 		XrVector3f euler = XrQuaternionf_ToEulerAngles(hmd.orientation);
