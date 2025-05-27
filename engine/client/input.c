@@ -769,6 +769,8 @@ void Host_InputFrame( void )
 		float s = sin(ToRadians(euler.y));
 		float c = cos(ToRadians(euler.y));
 		XrVector2f left = IN_VRGetJoystickState(0);
+		if (fabs(left.x) < 0.5) left.x = 0;
+		if (fabs(left.y) < 0.5) left.y = 0;
 		hmd.position = XrVector3f_ScalarMultiply(hmd.position, Cvar_VariableValue("vr_worldscale"));
 		float hmdX = hmd.position.x * c - hmd.position.z * s;
 		float hmdY = hmd.position.x * s + hmd.position.z * c;
@@ -780,7 +782,7 @@ void Host_InputFrame( void )
 
 		// Rotation
 		XrVector2f right = IN_VRGetJoystickState(1);
-		bool snapTurnDown = fabs(right.x) > 0.5;
+		bool snapTurnDown = fabs(right.x) > 0.8;
 		static bool lastSnapTurnDown = false;
 		static float lastYaw = 0;
 		static float lastPitch = 0;
@@ -799,7 +801,7 @@ void Host_InputFrame( void )
 		clgame.dllFuncs.pfnLookEvent( yaw, pitch );
 
 		// Weapon switch
-		bool weaponChangeDown = fabs(right.y) > 0.5;
+		bool weaponChangeDown = fabs(right.y) > 0.8;
 		static bool lastWeaponChangeDown = false;
 		if (weaponChangeDown && !lastWeaponChangeDown) {
 			Cbuf_AddText( right.y > 0 ? "invnext\n" : "invprev\n" );
