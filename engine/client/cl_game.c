@@ -381,6 +381,15 @@ static void SPR_DrawGeneric( int frame, float x, float y, float width, float hei
 		s2 = t2 = 1.0f;
 	}
 
+	// In VR mode the graphics needs to be scaled down on the center to be visible
+	if (Cvar_VariableValue("vr_gamemode") > 0)
+	{
+		x = x * 0.2f + clgame.scrInfo.iWidth * 0.4f;
+		y = y * 0.2f + clgame.scrInfo.iHeight * 0.4f;
+		width *= 0.2f;
+		height *= 0.2f;
+	}
+
 	// pass scissor test if supposed
 	if( !CL_Scissor( &clgame.ds.scissor, &x, &y, &width, &height, &s1, &t1, &s2, &t2 ))
 		return;

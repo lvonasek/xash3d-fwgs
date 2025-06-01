@@ -216,6 +216,15 @@ int CL_DrawCharacter( float x, float y, int number, const rgba_t color, cl_font_
 	w = ( rc->right - rc->left ) * font->scale;
 	h = ( rc->bottom - rc->top ) * font->scale;
 
+	// In VR mode the graphics needs to be scaled down on the center to be visible
+	if (Cvar_VariableValue("vr_gamemode") > 0)
+	{
+		x = x * 0.2f + clgame.scrInfo.iWidth * 0.4f;
+		y = y * 0.2f + clgame.scrInfo.iHeight * 0.4f;
+		w *= 0.2f;
+		h *= 0.2f;
+	}
+
 	if( FBitSet( flags, FONT_DRAW_HUD ))
 		SPR_AdjustSize( &x, &y, &w, &h );
 

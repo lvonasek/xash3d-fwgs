@@ -239,6 +239,7 @@ static void Sys_PrintUsage( const char *exename )
 }
 
 CVAR_DEFINE_AUTO( vr_fov_zoom, "0", FCVAR_MOVEVARS, "Zoom of the field of view" );
+CVAR_DEFINE_AUTO( vr_gamemode, "0", FCVAR_MOVEVARS, "Are we in the 3D VR mode?" );
 CVAR_DEFINE_AUTO( vr_hmd_offset, "0", FCVAR_MOVEVARS, "HMD height" );
 CVAR_DEFINE_AUTO( vr_hmd_roll, "0", FCVAR_MOVEVARS, "HMD roll angle" );
 CVAR_DEFINE_AUTO( vr_player_pitch, "0", FCVAR_MOVEVARS, "Pinch angle of the player" );
@@ -815,6 +816,7 @@ void Host_Frame( double time )
 	}
 	bool gameMode = !host.mouse_visible && cls.state == ca_active && cls.key_dest == key_game;
 	VR_SetConfig(VR_CONFIG_MODE, gameMode ? VR_MODE_STEREO_6DOF : VR_MODE_MONO_SCREEN);
+	Cvar_SetValue("vr_gamemode", gameMode ? 1 : 0);
 
 	double t1;
 
@@ -1223,6 +1225,7 @@ static void Host_InitCommon( int argc, char **argv, const char *progname, qboole
 	Key_Init();
 
 	Cvar_RegisterVariable( &vr_fov_zoom );
+	Cvar_RegisterVariable( &vr_gamemode );
 	Cvar_RegisterVariable( &vr_hmd_offset );
 	Cvar_RegisterVariable( &vr_hmd_roll );
 	Cvar_RegisterVariable( &vr_player_pitch );

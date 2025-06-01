@@ -656,7 +656,13 @@ void Host_InputFrame( void )
 
 	//IN_MouseMove();
 
-	// Do not allow touch controls in VR
+	// Esnure VR compatible layout is used
+	if (fabs(Cvar_VariableValue("hud_fontscale") - 1) > 0.1f) {
+		Cvar_SetValue( "hud_fontscale", 1 );
+	}
+	if (fabs(Cvar_VariableValue("hud_scale") - 2) > 0.1f) {
+		Cvar_SetValue( "hud_scale", 2 );
+	}
 	if (Cvar_VariableValue("touch_enable") > 0) {
 		Cvar_SetValue( "touch_enable", 0 );
 	}
@@ -700,7 +706,7 @@ void Host_InputFrame( void )
 	touchEventType t = event_motion;
 	int rbuttons = IN_VRGetButtonState(1);
 	bool down = rbuttons & ovrButton_Trigger && (currentTime.tv_sec - lastFocus.tv_sec < 2);
-	bool gameMode = !host.mouse_visible && cls.state == ca_active && cls.key_dest == key_game;
+	bool gameMode = Cvar_VariableValue("vr_gamemode") > 0.5f;
 	static bool pressedInUI = false;
 	static bool lastDown = false;
 	if (down && !lastDown) {
