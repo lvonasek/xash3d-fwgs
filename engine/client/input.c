@@ -660,6 +660,13 @@ void Host_InputFrame( void )
 	if (Cvar_VariableValue("touch_enable") > 0) {
 		Cvar_SetValue( "touch_enable", 0 );
 	}
+	// Ensure voice input is enabled
+	if (Cvar_VariableValue("voice_inputfromfile") < 1) {
+		Cvar_SetValue( "voice_inputfromfile", 1 );
+	}
+	if (Cvar_VariableValue("voice_scale") < 5) {
+		Cvar_SetValue( "voice_scale", 5 );
+	}
 
 	// VR get cursor position on screen
 	XrPosef pose = IN_VRGetPose(1);
@@ -718,7 +725,6 @@ void Host_InputFrame( void )
 			IN_TouchEvent(event_motion, 0, touchX, touchY, initialTouchX - touchX, initialTouchY - touchY);
 			sdl_keyboard_requested = false;
 			SDL_StartTextInput();
-            Con_Printf("Lubos: Keyboard requested");
 		}
 	}
 	initialTouchX = touchX;
@@ -747,7 +753,7 @@ void Host_InputFrame( void )
 		// Button mapping
 		static int lastlbuttons = 0;
 		mapKey(ovrButton_X, lbuttons, lastlbuttons, "drop");
-		mapKey(ovrButton_Y, lbuttons, lastlbuttons, "nightvision");
+		mapKey(ovrButton_Y, lbuttons, lastlbuttons, "+voicerecord");
 		mapKey(ovrButton_Trigger, lbuttons, lastlbuttons, "+use");
 		mapKey(ovrButton_Trigger, lbuttons, lastlbuttons, "+speed");
 		mapKey(ovrButton_Joystick, lbuttons, lastlbuttons, "exec touch/cmd/cmd");
