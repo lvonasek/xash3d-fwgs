@@ -382,13 +382,7 @@ static void SPR_DrawGeneric( int frame, float x, float y, float width, float hei
 	}
 
 	// In VR mode the graphics needs to be scaled down on the center to be visible
-	if (Cvar_VariableValue("vr_gamemode") > 0)
-	{
-		x = x * 0.2f + clgame.scrInfo.iWidth * 0.4f;
-		y = y * 0.2f + clgame.scrInfo.iHeight * 0.4f;
-		width *= 0.2f;
-		height *= 0.2f;
-	}
+	CL_VRHUDAdjust(&x, &y, &width, &height);
 
 	// pass scissor test if supposed
 	if( !CL_Scissor( &clgame.ds.scissor, &x, &y, &width, &height, &s1, &t1, &s2, &t2 ))
@@ -398,6 +392,20 @@ static void SPR_DrawGeneric( int frame, float x, float y, float width, float hei
 	SPR_AdjustSize( &x, &y, &width, &height );
 	ref.dllFuncs.Color4ub( clgame.ds.spriteColor[0], clgame.ds.spriteColor[1], clgame.ds.spriteColor[2], clgame.ds.spriteColor[3] );
 	ref.dllFuncs.R_DrawStretchPic( x, y, width, height, s1, t1, s2, t2, texnum );
+}
+
+
+void CL_VRHUDAdjust( float *x, float *y, float *width, float *height)
+{
+    if (Cvar_VariableValue("vr_gamemode") > 0)
+    {
+        float scale = 0.25f;
+        float offset = (1 - scale) / 2.0f;
+        *x = *x * scale + clgame.scrInfo.iWidth * offset;
+        *y = *y * scale + clgame.scrInfo.iHeight * offset;
+        *width *= scale;
+        *height *= scale;
+    }
 }
 
 /*

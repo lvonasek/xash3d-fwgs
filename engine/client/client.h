@@ -812,6 +812,7 @@ int CL_DrawString( float x, float y, const char *s, const rgba_t color, cl_font_
 void CL_DrawCharacterLen( cl_font_t *font, int number, int *width, int *height );
 void CL_DrawStringLen( cl_font_t *font, const char *s, int *width, int *height, int flags );
 int CL_DrawStringf( cl_font_t *font, float x, float y, const rgba_t color, int flags, const char *fmt, ... ) FORMAT_CHECK( 6 );
+void CL_VRHUDAdjust( float *x, float *y, float *width, float *height);
 
 
 //

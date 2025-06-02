@@ -643,6 +643,13 @@ void mapKey(int button, int currentButtons, int lastButtons, const char* action)
 
 extern bool sdl_keyboard_requested;
 
+void Cvar_LazySet(const char* name, float targetValue) {
+    float currentValue = Cvar_VariableValue(name);
+    if (fabs(currentValue - targetValue) > 0.01f) {
+        Cvar_SetValue(name, targetValue);
+    }
+}
+
 /*
 ==================
 Host_InputFrame
@@ -656,23 +663,14 @@ void Host_InputFrame( void )
 
 	//IN_MouseMove();
 
-	// Esnure VR compatible layout is used
-	if (fabs(Cvar_VariableValue("hud_fontscale") - 1) > 0.1f) {
-		Cvar_SetValue( "hud_fontscale", 1 );
-	}
-	if (fabs(Cvar_VariableValue("hud_scale") - 2) > 0.1f) {
-		Cvar_SetValue( "hud_scale", 2 );
-	}
-	if (Cvar_VariableValue("touch_enable") > 0) {
-		Cvar_SetValue( "touch_enable", 0 );
-	}
+	// Ensure VR compatible layout is used
+	bool gameMode = Cvar_VariableValue("vr_gamemode") > 0.5f;
+	Cvar_LazySet("con_fontscale", gameMode ? 1.5f : 1.0f);
+	Cvar_LazySet("hud_scale", 2);
+	Cvar_LazySet("touch_enable", 0);
 	// Ensure voice input is enabled
-	if (Cvar_VariableValue("voice_inputfromfile") < 1) {
-		Cvar_SetValue( "voice_inputfromfile", 1 );
-	}
-	if (Cvar_VariableValue("voice_scale") < 5) {
-		Cvar_SetValue( "voice_scale", 5 );
-	}
+	Cvar_LazySet("voice_inputfromfile", 1);
+	Cvar_LazySet("voice_scale", 5);
 
 	// VR get cursor position on screen
 	XrPosef pose = IN_VRGetPose(1);
@@ -706,7 +704,6 @@ void Host_InputFrame( void )
 	touchEventType t = event_motion;
 	int rbuttons = IN_VRGetButtonState(1);
 	bool down = rbuttons & ovrButton_Trigger && (currentTime.tv_sec - lastFocus.tv_sec < 2);
-	bool gameMode = Cvar_VariableValue("vr_gamemode") > 0.5f;
 	static bool pressedInUI = false;
 	static bool lastDown = false;
 	if (down && !lastDown) {

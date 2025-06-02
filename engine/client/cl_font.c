@@ -217,13 +217,7 @@ int CL_DrawCharacter( float x, float y, int number, const rgba_t color, cl_font_
 	h = ( rc->bottom - rc->top ) * font->scale;
 
 	// In VR mode the graphics needs to be scaled down on the center to be visible
-	if (Cvar_VariableValue("vr_gamemode") > 0)
-	{
-		x = x * 0.2f + clgame.scrInfo.iWidth * 0.4f;
-		y = y * 0.2f + clgame.scrInfo.iHeight * 0.4f;
-		w *= 0.2f;
-		h *= 0.2f;
-	}
+	CL_VRHUDAdjust(&x, &y, &w, &h);
 
 	if( FBitSet( flags, FONT_DRAW_HUD ))
 		SPR_AdjustSize( &x, &y, &w, &h );
@@ -244,6 +238,8 @@ int CL_DrawString( float x, float y, const char *s, const rgba_t color, cl_font_
 {
 	rgba_t current_color;
 	int draw_len = 0;
+
+	font = &cls.creditsFont; //Hack to get a better quality font
 
 	if( !font || !font->valid )
 		return 0;
