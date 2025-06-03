@@ -770,23 +770,13 @@ void Host_InputFrame( void )
 		mapKey(ovrButton_GripTrigger, rbuttons, lastrbuttons, "+reload");
 		lastrbuttons = rbuttons;
 
-		// HMD view
-		static float lastWeaponYaw = 0;
-		XrPosef weapon = IN_VRGetPose(1);
-		XrVector3f euler = XrQuaternionf_ToEulerAngles(weapon.orientation);
-		XrVector3f hmdEuler = XrQuaternionf_ToEulerAngles(hmd.orientation);
-		hmdEuler.y += Cvar_VariableValue("vr_player_yaw") - lastWeaponYaw;
-		Cvar_SetValue("vr_hmd_pitch", gameMode ? hmdEuler.x : 0);
-		Cvar_SetValue("vr_hmd_yaw", gameMode ? hmdEuler.y : 0);
-		Cvar_SetValue("vr_hmd_roll", gameMode ? hmdEuler.z : 0);
-		lastWeaponYaw = euler.y;
-
 		// Movement
 		//Cvar_SetValue("vr_hmd_offset",  hmd.position.y - hmdAltitude);
 		static float lastHmdX = 0;
 		static float lastHmdY = 0;
-		float s = sin(ToRadians(euler.y));
-		float c = cos(ToRadians(euler.y));
+		XrVector3f hmdEuler = XrQuaternionf_ToEulerAngles(hmd.orientation);
+		float s = sin(ToRadians(hmdEuler.y));
+		float c = cos(ToRadians(hmdEuler.y));
 		XrVector2f left = IN_VRGetJoystickState(0);
 		if (fabs(left.x) < 0.5) left.x = 0;
 		if (fabs(left.y) < 0.5) left.y = 0;
@@ -799,10 +789,10 @@ void Host_InputFrame( void )
 		lastHmdY = hmdY;
 		clgame.dllFuncs.pfnMoveEvent( left.y, left.x );
 
-		// Rotation
+		// Weapon rotation
+		XrPosef weapon = IN_VRGetPose(1);
+		XrVector3f euler = XrQuaternionf_ToEulerAngles(weapon.orientation);
 		XrVector2f right = IN_VRGetJoystickState(1);
-		bool snapTurnDown = fabs(right.x) > 0.8;
-		static bool lastSnapTurnDown = false;
 		static float lastYaw = 0;
 		static float lastPitch = 0;
 		float yaw = euler.y - lastYaw;
@@ -813,11 +803,25 @@ void Host_InputFrame( void )
 		}
 		lastYaw = euler.y;
 		lastPitch = euler.x;
+
+		// Snap turn
+		float snapTurnStep = 0;
+		bool snapTurnDown = fabs(right.x) > 0.8;
+		static bool lastSnapTurnDown = false;
 		if (snapTurnDown && !lastSnapTurnDown) {
-			yaw += right.x > 0 ? -45 : 45;
+			snapTurnStep = right.x > 0 ? -45 : 45;
+			yaw += snapTurnStep;
 		}
 		lastSnapTurnDown = snapTurnDown;
 		clgame.dllFuncs.pfnLookEvent( yaw, pitch );
+
+		// HMD view
+		static float lastWeaponYaw = 0;
+		hmdEuler.y += Cvar_VariableValue("vr_player_yaw") - lastWeaponYaw;
+		Cvar_SetValue("vr_hmd_pitch", gameMode ? hmdEuler.x : 0);
+		Cvar_SetValue("vr_hmd_yaw", gameMode ? hmdEuler.y + snapTurnStep : 0);
+		Cvar_SetValue("vr_hmd_roll", gameMode ? hmdEuler.z : 0);
+		lastWeaponYaw = euler.y;
 
 		// Weapon switch
 		bool weaponChangeDown = fabs(right.y) > 0.8;
