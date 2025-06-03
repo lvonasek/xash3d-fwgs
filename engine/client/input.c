@@ -667,7 +667,6 @@ void Host_InputFrame( void )
 	bool gameMode = Cvar_VariableValue("vr_gamemode") > 0.5f;
 	Cvar_LazySet("con_fontscale", gameMode ? 1.5f : 1.0f);
 	Cvar_LazySet("hud_scale", 2);
-	Cvar_LazySet("r_nocull", 1);
 	Cvar_LazySet("touch_enable", 0);
 	// Ensure voice input is enabled
 	Cvar_LazySet("voice_inputfromfile", 1);

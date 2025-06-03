@@ -365,6 +365,17 @@ void R_SetupFrustum( void )
 	RI.viewangles[1] = gEngfuncs.pfnGetCvarFloat("vr_hmd_yaw");
 	RI.viewangles[2] = gEngfuncs.pfnGetCvarFloat("vr_hmd_roll");
 
+	// Update vectors to fix culling
+	float pitch = -DEG2RAD(RI.viewangles[0]);
+	float yaw = -DEG2RAD(RI.viewangles[1]);
+	RI.vforward[0] = cos(yaw) * cos(pitch);
+	RI.vforward[1] = -sin(yaw) * cos(pitch);
+	RI.vforward[2] = sin(pitch);
+	RI.vright[0] = sin(yaw) * cos(pitch);
+	RI.vright[1] = cos(yaw) * cos(pitch);
+	RI.vright[2] = sin(pitch);
+	CrossProduct(RI.vforward, RI.vright, RI.vup);
+
 	if( !r_lockfrustum.value )
 	{
 		VectorCopy( RI.vieworg, RI.cullorigin );
