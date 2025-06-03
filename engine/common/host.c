@@ -241,8 +241,11 @@ static void Sys_PrintUsage( const char *exename )
 CVAR_DEFINE_AUTO( vr_fov_zoom, "0", FCVAR_MOVEVARS, "Zoom of the field of view" );
 CVAR_DEFINE_AUTO( vr_gamemode, "0", FCVAR_MOVEVARS, "Are we in the 3D VR mode?" );
 CVAR_DEFINE_AUTO( vr_hmd_offset, "0", FCVAR_MOVEVARS, "HMD height" );
-CVAR_DEFINE_AUTO( vr_hmd_roll, "0", FCVAR_MOVEVARS, "HMD roll angle" );
+CVAR_DEFINE_AUTO( vr_hmd_pitch, "0", FCVAR_MOVEVARS, "Camera pitch angle" );
+CVAR_DEFINE_AUTO( vr_hmd_yaw, "0", FCVAR_MOVEVARS, "Camera yaw angle" );
+CVAR_DEFINE_AUTO( vr_hmd_roll, "0", FCVAR_MOVEVARS, "Camera roll angle" );
 CVAR_DEFINE_AUTO( vr_player_pitch, "0", FCVAR_MOVEVARS, "Pinch angle of the player" );
+CVAR_DEFINE_AUTO( vr_player_yaw, "0", FCVAR_MOVEVARS, "Yaw angle of the player" );
 CVAR_DEFINE_AUTO( vr_stereo_side, "0", FCVAR_MOVEVARS, "Eye being drawn" );
 CVAR_DEFINE_AUTO( vr_worldscale, "40", FCVAR_MOVEVARS, "Sets the world scale for stereo separation" );
 
@@ -838,8 +841,6 @@ void Host_Frame( double time )
 	Host_GetCommands (); // dedicated in
 	Host_ServerFrame (); // server frame
 
-	float roll = XrQuaternionf_ToEulerAngles(VR_GetView(0).orientation).z;
-	Cvar_SetValue("vr_hmd_roll", gameMode ? roll : 0);
 	for (int eye = 0; eye < ovrMaxNumEyes; eye++) {
 		Cvar_SetValue("vr_stereo_side", eye);
 		VR_BeginFrame(engine, eye);
@@ -1227,8 +1228,11 @@ static void Host_InitCommon( int argc, char **argv, const char *progname, qboole
 	Cvar_RegisterVariable( &vr_fov_zoom );
 	Cvar_RegisterVariable( &vr_gamemode );
 	Cvar_RegisterVariable( &vr_hmd_offset );
+	Cvar_RegisterVariable( &vr_hmd_pitch );
+	Cvar_RegisterVariable( &vr_hmd_yaw );
 	Cvar_RegisterVariable( &vr_hmd_roll );
 	Cvar_RegisterVariable( &vr_player_pitch );
+	Cvar_RegisterVariable( &vr_player_yaw );
 	Cvar_RegisterVariable( &vr_stereo_side );
 	Cvar_RegisterVariable( &vr_worldscale );
 }

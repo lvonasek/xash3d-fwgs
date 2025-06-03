@@ -358,6 +358,13 @@ void R_SetupFrustum( void )
 	// build the transformation matrix for the given view angles
 	AngleVectors( RI.viewangles, RI.vforward, RI.vright, RI.vup );
 
+	// VR camera
+	gEngfuncs.Cvar_SetValue("vr_player_pitch", RI.viewangles[0]);
+	gEngfuncs.Cvar_SetValue("vr_player_yaw", RI.viewangles[1]);
+	RI.viewangles[0] = gEngfuncs.pfnGetCvarFloat("vr_hmd_pitch");
+	RI.viewangles[1] = gEngfuncs.pfnGetCvarFloat("vr_hmd_yaw");
+	RI.viewangles[2] = gEngfuncs.pfnGetCvarFloat("vr_hmd_roll");
+
 	if( !r_lockfrustum.value )
 	{
 		VectorCopy( RI.vieworg, RI.cullorigin );
@@ -411,10 +418,9 @@ static void R_SetupModelviewMatrix( matrix4x4 m )
 	Matrix4x4_CreateModelview( m );
 	Matrix4x4_ConcatTranslate(m, 0, gEngfuncs.pfnGetCvarFloat("vr_worldscale") * (VR_IPD / 2.0f) *
 											((gEngfuncs.pfnGetCvarFloat("vr_stereo_side") - 0.5f) * 2.0f), 0);
-	gEngfuncs.Cvar_SetValue("vr_player_pitch", RI.viewangles[0]);
 
 	float offset = gEngfuncs.pfnGetCvarFloat("vr_hmd_offset") * gEngfuncs.pfnGetCvarFloat("vr_worldscale");
-	Matrix4x4_ConcatRotate( m, -RI.viewangles[2] - gEngfuncs.pfnGetCvarFloat("vr_hmd_roll"), 1, 0, 0 );
+	Matrix4x4_ConcatRotate( m, -RI.viewangles[2], 1, 0, 0 );
 	Matrix4x4_ConcatRotate( m, -RI.viewangles[0], 0, 1, 0 );
 	Matrix4x4_ConcatRotate( m, -RI.viewangles[1], 0, 0, 1 );
 	Matrix4x4_ConcatTranslate( m, -RI.vieworg[0], -RI.vieworg[1], -RI.vieworg[2] - offset );

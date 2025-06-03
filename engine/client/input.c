@@ -667,6 +667,7 @@ void Host_InputFrame( void )
 	bool gameMode = Cvar_VariableValue("vr_gamemode") > 0.5f;
 	Cvar_LazySet("con_fontscale", gameMode ? 1.5f : 1.0f);
 	Cvar_LazySet("hud_scale", 2);
+	Cvar_LazySet("r_nocull", 1);
 	Cvar_LazySet("touch_enable", 0);
 	// Ensure voice input is enabled
 	Cvar_LazySet("voice_inputfromfile", 1);
@@ -770,11 +771,21 @@ void Host_InputFrame( void )
 		mapKey(ovrButton_GripTrigger, rbuttons, lastrbuttons, "+reload");
 		lastrbuttons = rbuttons;
 
+		// HMD view
+		static float lastWeaponYaw = 0;
+		XrPosef weapon = IN_VRGetPose(1);
+		XrVector3f euler = XrQuaternionf_ToEulerAngles(weapon.orientation);
+		XrVector3f hmdEuler = XrQuaternionf_ToEulerAngles(hmd.orientation);
+		hmdEuler.y += Cvar_VariableValue("vr_player_yaw") - lastWeaponYaw;
+		Cvar_SetValue("vr_hmd_pitch", gameMode ? hmdEuler.x : 0);
+		Cvar_SetValue("vr_hmd_yaw", gameMode ? hmdEuler.y : 0);
+		Cvar_SetValue("vr_hmd_roll", gameMode ? hmdEuler.z : 0);
+		lastWeaponYaw = euler.y;
+
 		// Movement
 		//Cvar_SetValue("vr_hmd_offset",  hmd.position.y - hmdAltitude);
 		static float lastHmdX = 0;
 		static float lastHmdY = 0;
-		XrVector3f euler = XrQuaternionf_ToEulerAngles(hmd.orientation);
 		float s = sin(ToRadians(euler.y));
 		float c = cos(ToRadians(euler.y));
 		XrVector2f left = IN_VRGetJoystickState(0);
