@@ -358,23 +358,27 @@ void R_SetupFrustum( void )
 	// build the transformation matrix for the given view angles
 	AngleVectors( RI.viewangles, RI.vforward, RI.vright, RI.vup );
 
-	// VR camera
-	gEngfuncs.Cvar_SetValue("vr_player_pitch", RI.viewangles[0]);
-	gEngfuncs.Cvar_SetValue("vr_player_yaw", RI.viewangles[1]);
-	RI.viewangles[0] = gEngfuncs.pfnGetCvarFloat("vr_hmd_pitch");
-	RI.viewangles[1] = gEngfuncs.pfnGetCvarFloat("vr_hmd_yaw");
-	RI.viewangles[2] = gEngfuncs.pfnGetCvarFloat("vr_hmd_roll");
+	// Use VR camera only when not zoomed
+	if (gEngfuncs.pfnGetCvarFloat("vr_fov_zoom") < 1.1f)
+	{
+		// VR camera
+		gEngfuncs.Cvar_SetValue("vr_player_pitch", RI.viewangles[0]);
+		gEngfuncs.Cvar_SetValue("vr_player_yaw", RI.viewangles[1]);
+		RI.viewangles[0] = gEngfuncs.pfnGetCvarFloat("vr_hmd_pitch");
+		RI.viewangles[1] = gEngfuncs.pfnGetCvarFloat("vr_hmd_yaw");
+		RI.viewangles[2] = gEngfuncs.pfnGetCvarFloat("vr_hmd_roll");
 
-	// Update vectors to fix culling
-	float pitch = -DEG2RAD(RI.viewangles[0]);
-	float yaw = -DEG2RAD(RI.viewangles[1]);
-	RI.vforward[0] = cos(yaw) * cos(pitch);
-	RI.vforward[1] = -sin(yaw) * cos(pitch);
-	RI.vforward[2] = sin(pitch);
-	RI.vright[0] = sin(yaw) * cos(pitch);
-	RI.vright[1] = cos(yaw) * cos(pitch);
-	RI.vright[2] = sin(pitch);
-	CrossProduct(RI.vforward, RI.vright, RI.vup);
+		// Update vectors to fix culling
+		float pitch = -DEG2RAD(RI.viewangles[0]);
+		float yaw = -DEG2RAD(RI.viewangles[1]);
+		RI.vforward[0] = cos(yaw) * cos(pitch);
+		RI.vforward[1] = -sin(yaw) * cos(pitch);
+		RI.vforward[2] = sin(pitch);
+		RI.vright[0] = sin(yaw) * cos(pitch);
+		RI.vright[1] = cos(yaw) * cos(pitch);
+		RI.vright[2] = sin(pitch);
+		CrossProduct(RI.vforward, RI.vright, RI.vup);
+	}
 
 	if( !r_lockfrustum.value )
 	{
