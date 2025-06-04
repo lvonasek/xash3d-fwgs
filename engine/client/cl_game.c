@@ -294,6 +294,17 @@ void SPR_AdjustSize( float *x, float *y, float *w, float *h )
 	if( refState.width == clgame.scrInfo.iWidth && refState.height == clgame.scrInfo.iHeight )
 		return;
 
+	// In VR mode the graphics needs to be scaled down on the center to be visible
+	if (Cvar_VariableValue("vr_gamemode") > 0)
+	{
+		float scale = 0.25f;
+		float offset = (1 - scale) / 2.0f;
+		*x = *x * scale + clgame.scrInfo.iWidth * offset;
+		*y = *y * scale + clgame.scrInfo.iHeight * offset;
+		*w *= scale;
+		*h *= scale;
+	}
+
 	// scale for screen sizes
 	xscale = refState.width / (float)clgame.scrInfo.iWidth;
 	yscale = refState.height / (float)clgame.scrInfo.iHeight;
@@ -381,9 +392,6 @@ static void SPR_DrawGeneric( int frame, float x, float y, float width, float hei
 		s2 = t2 = 1.0f;
 	}
 
-	// In VR mode the graphics needs to be scaled down on the center to be visible
-	CL_VRHUDAdjust(&x, &y, &width, &height);
-
 	// pass scissor test if supposed
 	if( !CL_Scissor( &clgame.ds.scissor, &x, &y, &width, &height, &s1, &t1, &s2, &t2 ))
 		return;
@@ -392,20 +400,6 @@ static void SPR_DrawGeneric( int frame, float x, float y, float width, float hei
 	SPR_AdjustSize( &x, &y, &width, &height );
 	ref.dllFuncs.Color4ub( clgame.ds.spriteColor[0], clgame.ds.spriteColor[1], clgame.ds.spriteColor[2], clgame.ds.spriteColor[3] );
 	ref.dllFuncs.R_DrawStretchPic( x, y, width, height, s1, t1, s2, t2, texnum );
-}
-
-
-void CL_VRHUDAdjust( float *x, float *y, float *width, float *height)
-{
-    if (Cvar_VariableValue("vr_gamemode") > 0)
-    {
-        float scale = 0.25f;
-        float offset = (1 - scale) / 2.0f;
-        *x = *x * scale + clgame.scrInfo.iWidth * offset;
-        *y = *y * scale + clgame.scrInfo.iHeight * offset;
-        *width *= scale;
-        *height *= scale;
-    }
 }
 
 /*
@@ -418,6 +412,7 @@ called each frame
 void CL_DrawCenterPrint( void )
 {
 	cl_font_t *font = Con_GetCurFont();
+	font = &cls.creditsFont; //Hack to get a better quality font
 	char	*pText;
 	int	i, j, x, y;
 	int	width, lineLength;

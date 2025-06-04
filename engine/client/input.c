@@ -668,7 +668,9 @@ void Host_InputFrame( void )
 	Cvar_LazySet("con_fontscale", gameMode ? 1.5f : 1.0f);
 	Cvar_LazySet("hud_scale", 2);
 	Cvar_LazySet("touch_enable", 0);
+	Cvar_LazySet("xhair_enable", 1);
 	// Ensure voice input is enabled
+	Cvar_LazySet("sv_voicequality", 5);
 	Cvar_LazySet("voice_inputfromfile", 1);
 	Cvar_LazySet("voice_scale", 5);
 
@@ -778,8 +780,8 @@ void Host_InputFrame( void )
 		float s = sin(ToRadians(hmdEuler.y));
 		float c = cos(ToRadians(hmdEuler.y));
 		XrVector2f left = IN_VRGetJoystickState(0);
-		if (fabs(left.x) < 0.5) left.x = 0;
-		if (fabs(left.y) < 0.5) left.y = 0;
+		if (fabs(left.x) < 0.15) left.x = 0;
+		if (fabs(left.y) < 0.15) left.y = 0;
 		hmd.position = XrVector3f_ScalarMultiply(hmd.position, Cvar_VariableValue("vr_worldscale"));
 		float hmdX = hmd.position.x * c - hmd.position.z * s;
 		float hmdY = hmd.position.x * s + hmd.position.z * c;
@@ -791,14 +793,15 @@ void Host_InputFrame( void )
 
 		// Weapon rotation
 		XrPosef weapon = IN_VRGetPose(1);
-		XrVector3f euler = XrQuaternionf_ToEulerAngles(weapon.orientation);
+		bool zoomed = Cvar_VariableValue("vr_fov_zoom") > 1.1f;
+		XrVector3f euler = XrQuaternionf_ToEulerAngles(zoomed ? hmd.orientation : weapon.orientation);
 		XrVector2f right = IN_VRGetJoystickState(1);
 		static float lastYaw = 0;
 		static float lastPitch = 0;
 		float yaw = euler.y - lastYaw;
 		float pitch = euler.x - lastPitch;
 		float diff = lastPitch - Cvar_VariableValue("vr_player_pitch");
-		if ((fabs(diff) > 1) && (Cvar_VariableValue("vr_fov_zoom") < 1.1f)) {
+		if ((fabs(diff) > 1) && !zoomed) {
 			pitch += diff + 0.02f;
 		}
 		lastYaw = euler.y;

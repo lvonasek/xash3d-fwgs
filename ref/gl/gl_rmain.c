@@ -378,6 +378,8 @@ void R_SetupFrustum( void )
 		RI.vright[1] = cos(yaw) * cos(pitch);
 		RI.vright[2] = sin(pitch);
 		CrossProduct(RI.vforward, RI.vright, RI.vup);
+	} else {
+		RI.viewangles[2] = gEngfuncs.pfnGetCvarFloat("vr_hmd_roll");
 	}
 
 	if( !r_lockfrustum.value )
