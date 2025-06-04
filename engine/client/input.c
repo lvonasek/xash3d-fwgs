@@ -758,11 +758,12 @@ void Host_InputFrame( void )
 		// Button mapping
 		static int lastlbuttons = 0;
 		mapKey(ovrButton_X, lbuttons, lastlbuttons, "drop");
-		mapKey(ovrButton_Y, lbuttons, lastlbuttons, "+voicerecord");
+		mapKey(ovrButton_Y, lbuttons, lastlbuttons, "impulse 201");
+		mapKey(ovrButton_Y, lbuttons, lastlbuttons, "nightvision");
 		mapKey(ovrButton_Trigger, lbuttons, lastlbuttons, "+use");
-		mapKey(ovrButton_Trigger, lbuttons, lastlbuttons, "+speed");
+		mapKey(ovrButton_Trigger, lbuttons, lastlbuttons, "buy");
 		mapKey(ovrButton_Joystick, lbuttons, lastlbuttons, "exec touch/cmd/cmd");
-		mapKey(ovrButton_GripTrigger, lbuttons, lastlbuttons, "buy");
+		mapKey(ovrButton_GripTrigger, lbuttons, lastlbuttons, "+voicerecord");
 		lastlbuttons = lbuttons;
 		static int lastrbuttons = 0;
 		mapKey(ovrButton_A, rbuttons, lastrbuttons, "+duck");
