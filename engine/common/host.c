@@ -44,6 +44,7 @@ GNU General Public License for more details.
 #include "enginefeatures.h"
 #include "render_api.h"	// decallist_t
 #include "tests.h"
+#include <cl_tent.h>
 
 static pfnChangeGame	pChangeGame = NULL;
 host_parm_t		host;	// host parms
@@ -254,12 +255,8 @@ CVAR_DEFINE_AUTO( vr_player_pitch, "0", FCVAR_MOVEVARS, "Pinch angle of the play
 CVAR_DEFINE_AUTO( vr_player_yaw, "0", FCVAR_MOVEVARS, "Yaw angle of the player" );
 CVAR_DEFINE_AUTO( vr_stereo_side, "0", FCVAR_MOVEVARS, "Eye being drawn" );
 CVAR_DEFINE_AUTO( vr_worldscale, "40", FCVAR_MOVEVARS, "Sets the world scale for stereo separation" );
-CVAR_DEFINE_AUTO( vr_xhair_pos2d_x, "0", FCVAR_MOVEVARS, "Cross-hair 2d position x" );
-CVAR_DEFINE_AUTO( vr_xhair_pos2d_y, "0", FCVAR_MOVEVARS, "Cross-hair 2d position y" );
-CVAR_DEFINE_AUTO( vr_xhair_pos2d_z, "0", FCVAR_MOVEVARS, "Cross-hair 2d position z" );
-CVAR_DEFINE_AUTO( vr_xhair_pos3d_x, "0", FCVAR_MOVEVARS, "Cross-hair 3d position x" );
-CVAR_DEFINE_AUTO( vr_xhair_pos3d_y, "0", FCVAR_MOVEVARS, "Cross-hair 3d position y" );
-CVAR_DEFINE_AUTO( vr_xhair_pos3d_z, "0", FCVAR_MOVEVARS, "Cross-hair 3d position z" );
+CVAR_DEFINE_AUTO( vr_xhair_x, "0", FCVAR_MOVEVARS, "Cross-hair 2d position x" );
+CVAR_DEFINE_AUTO( vr_xhair_y, "0", FCVAR_MOVEVARS, "Cross-hair 2d position y" );
 
 static void Sys_PrintBugcompUsage( const char *exename )
 {
@@ -1499,12 +1496,8 @@ void Host_VRInit( void )
 	Cvar_RegisterVariable( &vr_player_yaw );
 	Cvar_RegisterVariable( &vr_stereo_side );
 	Cvar_RegisterVariable( &vr_worldscale );
-	Cvar_RegisterVariable( &vr_xhair_pos2d_x );
-	Cvar_RegisterVariable( &vr_xhair_pos2d_y );
-	Cvar_RegisterVariable( &vr_xhair_pos2d_z );
-	Cvar_RegisterVariable( &vr_xhair_pos3d_x );
-	Cvar_RegisterVariable( &vr_xhair_pos3d_y );
-	Cvar_RegisterVariable( &vr_xhair_pos3d_z );
+	Cvar_RegisterVariable( &vr_xhair_x );
+	Cvar_RegisterVariable( &vr_xhair_y );
 }
 
 void Host_VRInput( void )
@@ -1775,8 +1768,9 @@ void Host_VRWeaponCrosshair()
 		}
 	}
 
-	// Share the result with the renderer
-	Cvar_SetValue("vr_xhair_pos3d_x", vecEnd[0]);
-	Cvar_SetValue("vr_xhair_pos3d_y", vecEnd[1]);
-	Cvar_SetValue("vr_xhair_pos3d_z", vecEnd[2]);
+	// Convert the position into screen coordinates
+	vec3_t screenPos;
+	TriWorldToScreen(vecEnd, screenPos);
+	Cvar_SetValue("vr_xhair_x", screenPos[0]);
+	Cvar_SetValue("vr_xhair_y", screenPos[1]);
 }

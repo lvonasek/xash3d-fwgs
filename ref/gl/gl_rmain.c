@@ -371,17 +371,6 @@ void R_SetupFrustum( void )
 		gEngfuncs.Cvar_SetValue("vr_player_pitch", RI.viewangles[0]);
 		gEngfuncs.Cvar_SetValue("vr_player_yaw", RI.viewangles[1]);
 
-		// Calculate VR cross-hair
-		R_SetupGL( true );
-		vec3_t xhair_pos2d; vec3_t xhair_pos3d;
-		xhair_pos3d[0] = gEngfuncs.pfnGetCvarFloat("vr_xhair_pos3d_x");
-		xhair_pos3d[1] = gEngfuncs.pfnGetCvarFloat("vr_xhair_pos3d_y");
-		xhair_pos3d[2] = gEngfuncs.pfnGetCvarFloat("vr_xhair_pos3d_z");
-		R_WorldToScreen(xhair_pos3d, xhair_pos2d);
-		gEngfuncs.Cvar_SetValue("vr_xhair_pos2d_x", xhair_pos2d[0]);
-		gEngfuncs.Cvar_SetValue("vr_xhair_pos2d_y", xhair_pos2d[1]);
-		gEngfuncs.Cvar_SetValue("vr_xhair_pos2d_z", xhair_pos2d[2]);
-
 		// VR camera
 		RI.viewangles[0] = gEngfuncs.pfnGetCvarFloat("vr_hmd_pitch");
 		RI.viewangles[1] = gEngfuncs.pfnGetCvarFloat("vr_hmd_yaw");
