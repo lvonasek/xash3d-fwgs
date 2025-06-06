@@ -567,6 +567,7 @@ void Host_Frame( double time );
 void Host_Credits( void );
 void Host_ExitInMain( void );
 
+void Host_VRInit( void );
 void Host_VRInput( void );
 void Host_VRButtonMap( int button, int currentButtons, int lastButtons, const char* action );
 void Host_VRButtonMapping( int lbuttons, int rbuttons );
@@ -576,6 +577,7 @@ bool Host_VRMenuInput( bool cursorActive, bool gameMode, int lbuttons, int rbutt
 void Host_VRMovement( float hmdAltitude, vec3_t hmdPosition, float thumbstickX, float thumbstickY, float yaw );
 void Host_VRRotations( bool zoomed, vec3_t hmdAngles, vec3_t weaponAngles, float thumbstickX );
 void Host_VRWeaponChange( float thumbstickY );
+void Host_VRWeaponCrosshair();
 
 //
 // host_state.c

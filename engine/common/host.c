@@ -244,10 +244,22 @@ CVAR_DEFINE_AUTO( vr_hmd_offset, "0", FCVAR_MOVEVARS, "HMD height" );
 CVAR_DEFINE_AUTO( vr_hmd_pitch, "0", FCVAR_MOVEVARS, "Camera pitch angle" );
 CVAR_DEFINE_AUTO( vr_hmd_yaw, "0", FCVAR_MOVEVARS, "Camera yaw angle" );
 CVAR_DEFINE_AUTO( vr_hmd_roll, "0", FCVAR_MOVEVARS, "Camera roll angle" );
+CVAR_DEFINE_AUTO( vr_player_dir_x, "0", FCVAR_MOVEVARS, "Direction x of the player" );
+CVAR_DEFINE_AUTO( vr_player_dir_y, "0", FCVAR_MOVEVARS, "Direction y of the player" );
+CVAR_DEFINE_AUTO( vr_player_dir_z, "0", FCVAR_MOVEVARS, "Direction z of the player" );
+CVAR_DEFINE_AUTO( vr_player_pos_x, "0", FCVAR_MOVEVARS, "Position x of the player" );
+CVAR_DEFINE_AUTO( vr_player_pos_y, "0", FCVAR_MOVEVARS, "Position y of the player" );
+CVAR_DEFINE_AUTO( vr_player_pos_z, "0", FCVAR_MOVEVARS, "Position z of the player" );
 CVAR_DEFINE_AUTO( vr_player_pitch, "0", FCVAR_MOVEVARS, "Pinch angle of the player" );
 CVAR_DEFINE_AUTO( vr_player_yaw, "0", FCVAR_MOVEVARS, "Yaw angle of the player" );
 CVAR_DEFINE_AUTO( vr_stereo_side, "0", FCVAR_MOVEVARS, "Eye being drawn" );
 CVAR_DEFINE_AUTO( vr_worldscale, "40", FCVAR_MOVEVARS, "Sets the world scale for stereo separation" );
+CVAR_DEFINE_AUTO( vr_xhair_pos2d_x, "0", FCVAR_MOVEVARS, "Cross-hair 2d position x" );
+CVAR_DEFINE_AUTO( vr_xhair_pos2d_y, "0", FCVAR_MOVEVARS, "Cross-hair 2d position y" );
+CVAR_DEFINE_AUTO( vr_xhair_pos2d_z, "0", FCVAR_MOVEVARS, "Cross-hair 2d position z" );
+CVAR_DEFINE_AUTO( vr_xhair_pos3d_x, "0", FCVAR_MOVEVARS, "Cross-hair 3d position x" );
+CVAR_DEFINE_AUTO( vr_xhair_pos3d_y, "0", FCVAR_MOVEVARS, "Cross-hair 3d position y" );
+CVAR_DEFINE_AUTO( vr_xhair_pos3d_z, "0", FCVAR_MOVEVARS, "Cross-hair 3d position z" );
 
 static void Sys_PrintBugcompUsage( const char *exename )
 {
@@ -1226,16 +1238,7 @@ static void Host_InitCommon( int argc, char **argv, const char *progname, qboole
 	IN_Init();
 	Key_Init();
 
-	Cvar_RegisterVariable( &vr_fov_zoom );
-	Cvar_RegisterVariable( &vr_gamemode );
-	Cvar_RegisterVariable( &vr_hmd_offset );
-	Cvar_RegisterVariable( &vr_hmd_pitch );
-	Cvar_RegisterVariable( &vr_hmd_yaw );
-	Cvar_RegisterVariable( &vr_hmd_roll );
-	Cvar_RegisterVariable( &vr_player_pitch );
-	Cvar_RegisterVariable( &vr_player_yaw );
-	Cvar_RegisterVariable( &vr_stereo_side );
-	Cvar_RegisterVariable( &vr_worldscale );
+	Host_VRInit();
 }
 
 static void Host_FreeCommon( void )
@@ -1478,6 +1481,32 @@ void Cvar_LazySet(const char* name, float targetValue) {
 	}
 }
 
+void Host_VRInit( void )
+{
+	Cvar_RegisterVariable( &vr_fov_zoom );
+	Cvar_RegisterVariable( &vr_gamemode );
+	Cvar_RegisterVariable( &vr_hmd_offset );
+	Cvar_RegisterVariable( &vr_hmd_pitch );
+	Cvar_RegisterVariable( &vr_hmd_yaw );
+	Cvar_RegisterVariable( &vr_hmd_roll );
+	Cvar_RegisterVariable( &vr_player_dir_x );
+	Cvar_RegisterVariable( &vr_player_dir_y );
+	Cvar_RegisterVariable( &vr_player_dir_z );
+	Cvar_RegisterVariable( &vr_player_pos_x );
+	Cvar_RegisterVariable( &vr_player_pos_y );
+	Cvar_RegisterVariable( &vr_player_pos_z );
+	Cvar_RegisterVariable( &vr_player_pitch );
+	Cvar_RegisterVariable( &vr_player_yaw );
+	Cvar_RegisterVariable( &vr_stereo_side );
+	Cvar_RegisterVariable( &vr_worldscale );
+	Cvar_RegisterVariable( &vr_xhair_pos2d_x );
+	Cvar_RegisterVariable( &vr_xhair_pos2d_y );
+	Cvar_RegisterVariable( &vr_xhair_pos2d_z );
+	Cvar_RegisterVariable( &vr_xhair_pos3d_x );
+	Cvar_RegisterVariable( &vr_xhair_pos3d_y );
+	Cvar_RegisterVariable( &vr_xhair_pos3d_z );
+}
+
 void Host_VRInput( void )
 {
 	// Get VR input
@@ -1517,6 +1546,7 @@ void Host_VRInput( void )
 		Host_VRMovement(hmdAltitude, hmdPosition, left.x, left.y, hmdAngles[YAW]);
 		Host_VRRotations(zoomed, hmdAngles, weaponAngles, right.x);
 		Host_VRWeaponChange(right.y);
+		Host_VRWeaponCrosshair();
 	} else {
 		// Measure player when not in game mode
 		hmdAltitude = hmd.position.y;
@@ -1719,4 +1749,34 @@ void Host_VRWeaponChange( float thumbstickY )
 		Cbuf_AddText( "-attack\n" );
 	}
 	lastWeaponChangeDown = weaponChangeDown;
+}
+
+void Host_VRWeaponCrosshair()
+{
+	// Get player position and direction
+	vec3_t vecSrc, vecDir, vecEnd;
+	vecDir[0] = Cvar_VariableValue("vr_player_dir_x");
+	vecDir[1] = Cvar_VariableValue("vr_player_dir_y");
+	vecDir[2] = Cvar_VariableValue("vr_player_dir_z");
+	vecSrc[0] = Cvar_VariableValue("vr_player_pos_x");
+	vecSrc[1] = Cvar_VariableValue("vr_player_pos_y");
+	vecSrc[2] = Cvar_VariableValue("vr_player_pos_z");
+
+	// Set cross-hair position far away
+	for (int j = 0; j < 3; j++) {
+		vecEnd[j] = vecSrc[j] + 4096.0f * vecDir[j];
+	}
+
+	// Test if there is a closer surface cross-hair should point to
+	pmtrace_t trace = CL_TraceLine( vecSrc, vecEnd, PM_STUDIO_IGNORE );
+	if( trace.fraction != 1.0f ) {
+		for (int j = 0; j < 3; j++) {
+			vecEnd[j] = trace.endpos[j];
+		}
+	}
+
+	// Share the result with the renderer
+	Cvar_SetValue("vr_xhair_pos3d_x", vecEnd[0]);
+	Cvar_SetValue("vr_xhair_pos3d_y", vecEnd[1]);
+	Cvar_SetValue("vr_xhair_pos3d_z", vecEnd[2]);
 }
