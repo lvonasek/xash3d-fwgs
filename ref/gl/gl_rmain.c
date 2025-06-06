@@ -302,7 +302,7 @@ static void R_Clear( int bitMask )
 		pglClearColor( 0.0f, 1.0f, 0.0f, 1.0f ); // green background (Valve rules)
 	else pglClearColor( 0.5f, 0.5f, 0.5f, 1.0f );
 
-	bits = GL_DEPTH_BUFFER_BIT;
+	bits = GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT;
 
 	if( glState.stencilEnabled )
 		bits |= GL_STENCIL_BUFFER_BIT;
