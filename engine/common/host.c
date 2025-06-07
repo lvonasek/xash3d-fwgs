@@ -254,7 +254,7 @@ CVAR_DEFINE_AUTO( vr_player_pos_z, "0", FCVAR_MOVEVARS, "Position z of the playe
 CVAR_DEFINE_AUTO( vr_player_pitch, "0", FCVAR_MOVEVARS, "Pinch angle of the player" );
 CVAR_DEFINE_AUTO( vr_player_yaw, "0", FCVAR_MOVEVARS, "Yaw angle of the player" );
 CVAR_DEFINE_AUTO( vr_stereo_side, "0", FCVAR_MOVEVARS, "Eye being drawn" );
-CVAR_DEFINE_AUTO( vr_worldscale, "40", FCVAR_MOVEVARS, "Sets the world scale for stereo separation" );
+CVAR_DEFINE_AUTO( vr_worldscale, "30", FCVAR_MOVEVARS, "Sets the world scale for stereo separation" );
 CVAR_DEFINE_AUTO( vr_xhair_x, "0", FCVAR_MOVEVARS, "Cross-hair 2d position x" );
 CVAR_DEFINE_AUTO( vr_xhair_y, "0", FCVAR_MOVEVARS, "Cross-hair 2d position y" );
 
