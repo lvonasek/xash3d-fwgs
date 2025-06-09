@@ -1503,14 +1503,17 @@ void Host_VRInit( void )
 void Host_VRInput( void )
 {
 	// Get VR input
+	bool rightHanded = Cvar_VariableValue("cl_righthand") > 0;
+	int primaryController = rightHanded ? 1 : 0;
+	int secondaryController = rightHanded ? 0 : 1;
 	XrPosef hmd = VR_GetView(0);
-	XrPosef pose = IN_VRGetPose(1);
+	XrPosef pose = IN_VRGetPose(primaryController);
 	XrVector3f angles = XrQuaternionf_ToEulerAngles(pose.orientation);
-	bool cursorActive = IN_VRIsActive(1);
-	int lbuttons = IN_VRGetButtonState(0);
-	int rbuttons = IN_VRGetButtonState(1);
-	XrVector2f left = IN_VRGetJoystickState(0);
-	XrVector2f right = IN_VRGetJoystickState(1);
+	bool cursorActive = IN_VRIsActive(primaryController);
+	int lbuttons = IN_VRGetButtonState(secondaryController);
+	int rbuttons = IN_VRGetButtonState(primaryController);
+	XrVector2f left = IN_VRGetJoystickState(secondaryController);
+	XrVector2f right = IN_VRGetJoystickState(primaryController);
 
 	// Get euler angles
 	bool zoomed = Cvar_VariableValue("vr_zoomed") > 0;
@@ -1524,7 +1527,7 @@ void Host_VRInput( void )
 	vec2_t cursor = {};
 	bool gameMode = Host_VRConfig();
 	Host_VRCursor(cursorActive, angles.x, angles.y, cursor);
-	bool pressedInUI = Host_VRMenuInput(cursorActive, gameMode, lbuttons, rbuttons, cursor);
+	bool pressedInUI = Host_VRMenuInput(cursorActive, gameMode, !rightHanded, lbuttons, rbuttons, cursor);
 
 	// Do not pass button actions which started in UI
 	if (gameMode && pressedInUI) {
@@ -1535,7 +1538,7 @@ void Host_VRInput( void )
 	// In-game input
 	static float hmdAltitude = 0;
 	if (gameMode) {
-		Host_VRButtonMapping(lbuttons, rbuttons);
+		Host_VRButtonMapping(!rightHanded, lbuttons, rbuttons);
 		Host_VRMovement(hmdAltitude, hmdPosition, left.x, left.y, hmdAngles[YAW]);
 		Host_VRRotations(zoomed, hmdAngles, weaponAngles, right.x);
 		Host_VRWeaponChange(right.y);
@@ -1565,20 +1568,25 @@ void Host_VRButtonMap( int button, int currentButtons, int lastButtons, const ch
 	}
 }
 
-void Host_VRButtonMapping( int lbuttons, int rbuttons )
+void Host_VRButtonMapping( bool swapped, int lbuttons, int rbuttons )
 {
+	int leftPrimaryButton = swapped ? ovrButton_A : ovrButton_X;
+	int leftSecondaryButton = swapped ? ovrButton_B : ovrButton_Y;
+	int rightPrimaryButton = !swapped ? ovrButton_A : ovrButton_X;
+	int rightSecondaryButton = !swapped ? ovrButton_B : ovrButton_Y;
+
 	static int lastlbuttons = 0;
-	Host_VRButtonMap(ovrButton_X, lbuttons, lastlbuttons, "drop");
-	Host_VRButtonMap(ovrButton_Y, lbuttons, lastlbuttons, "impulse 201");
-	Host_VRButtonMap(ovrButton_Y, lbuttons, lastlbuttons, "nightvision");
+	Host_VRButtonMap(leftPrimaryButton, lbuttons, lastlbuttons, "drop");
+	Host_VRButtonMap(leftSecondaryButton, lbuttons, lastlbuttons, "impulse 201");
+	Host_VRButtonMap(leftSecondaryButton, lbuttons, lastlbuttons, "nightvision");
 	Host_VRButtonMap(ovrButton_Trigger, lbuttons, lastlbuttons, "+use");
 	Host_VRButtonMap(ovrButton_Trigger, lbuttons, lastlbuttons, "buy");
 	Host_VRButtonMap(ovrButton_Joystick, lbuttons, lastlbuttons, "exec touch/cmd/cmd");
 	Host_VRButtonMap(ovrButton_GripTrigger, lbuttons, lastlbuttons, "+voicerecord");
 	lastlbuttons = lbuttons;
 	static int lastrbuttons = 0;
-	Host_VRButtonMap(ovrButton_A, rbuttons, lastrbuttons, "+duck");
-	Host_VRButtonMap(ovrButton_B, rbuttons, lastrbuttons, "+jump");
+	Host_VRButtonMap(rightPrimaryButton, rbuttons, lastrbuttons, "+duck");
+	Host_VRButtonMap(rightSecondaryButton, rbuttons, lastrbuttons, "+jump");
 	Host_VRButtonMap(ovrButton_Trigger, rbuttons, lastrbuttons, "+attack");
 	Host_VRButtonMap(ovrButton_Joystick, rbuttons, lastrbuttons, "+attack2");
 	Host_VRButtonMap(ovrButton_GripTrigger, rbuttons, lastrbuttons, "+reload");
@@ -1624,7 +1632,7 @@ void Host_VRCursor( bool cursorActive, float x, float y, vec2_t cursor )
 
 extern bool sdl_keyboard_requested;
 
-bool Host_VRMenuInput( bool cursorActive, bool gameMode, int lbuttons, int rbuttons, vec2_t cursor )
+bool Host_VRMenuInput( bool cursorActive, bool gameMode, bool swapped, int lbuttons, int rbuttons, vec2_t cursor )
 {
 	// Deactivate temporary input when client restored focus
 	static struct timeval lastFocus;
@@ -1667,7 +1675,8 @@ bool Host_VRMenuInput( bool cursorActive, bool gameMode, int lbuttons, int rbutt
 	initialTouchY = cursor[1];
 
 	// Escape key
-	bool escape = lbuttons & ovrButton_Enter;
+	int buttons = swapped ? rbuttons : lbuttons;
+	bool escape = buttons & ovrButton_Enter;
 	static bool lastEscape = false;
 	if (escape && !lastEscape) {
 		Key_Event(K_ESCAPE, true);
