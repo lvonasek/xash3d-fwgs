@@ -578,6 +578,7 @@ void Host_VRMovement( float hmdAltitude, vec3_t hmdPosition, float thumbstickX, 
 void Host_VRRotations( bool zoomed, vec3_t hmdAngles, vec3_t weaponAngles, float thumbstickX );
 void Host_VRWeaponChange( float thumbstickY );
 void Host_VRWeaponCrosshair();
+void Host_VRWeaponPosition( vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponPosition );
 
 //
 // host_state.c

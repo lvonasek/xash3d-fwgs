@@ -253,6 +253,10 @@ CVAR_DEFINE_AUTO( vr_player_pos_z, "0", FCVAR_MOVEVARS, "Position z of the playe
 CVAR_DEFINE_AUTO( vr_player_pitch, "0", FCVAR_MOVEVARS, "Pinch angle of the player" );
 CVAR_DEFINE_AUTO( vr_player_yaw, "0", FCVAR_MOVEVARS, "Yaw angle of the player" );
 CVAR_DEFINE_AUTO( vr_stereo_side, "0", FCVAR_MOVEVARS, "Eye being drawn" );
+CVAR_DEFINE_AUTO( vr_weapon_roll, "0", FCVAR_MOVEVARS, "Weapon roll angle" );
+CVAR_DEFINE_AUTO( vr_weapon_x, "0", FCVAR_MOVEVARS, "Weapon position x" );
+CVAR_DEFINE_AUTO( vr_weapon_y, "0", FCVAR_MOVEVARS, "Weapon position y" );
+CVAR_DEFINE_AUTO( vr_weapon_z, "0", FCVAR_MOVEVARS, "Weapon position z" );
 CVAR_DEFINE_AUTO( vr_worldscale, "30", FCVAR_MOVEVARS, "Sets the world scale for stereo separation" );
 CVAR_DEFINE_AUTO( vr_xhair_x, "0", FCVAR_MOVEVARS, "Cross-hair 2d position x" );
 CVAR_DEFINE_AUTO( vr_xhair_y, "0", FCVAR_MOVEVARS, "Cross-hair 2d position y" );
@@ -1494,6 +1498,10 @@ void Host_VRInit( void )
 	Cvar_RegisterVariable( &vr_player_pitch );
 	Cvar_RegisterVariable( &vr_player_yaw );
 	Cvar_RegisterVariable( &vr_stereo_side );
+	Cvar_RegisterVariable( &vr_weapon_roll );
+	Cvar_RegisterVariable( &vr_weapon_x );
+	Cvar_RegisterVariable( &vr_weapon_y );
+	Cvar_RegisterVariable( &vr_weapon_z );
 	Cvar_RegisterVariable( &vr_worldscale );
 	Cvar_RegisterVariable( &vr_xhair_x );
 	Cvar_RegisterVariable( &vr_xhair_y );
@@ -1521,6 +1529,7 @@ void Host_VRInput( void )
 	XrVector3f hmdEuler = XrQuaternionf_ToEulerAngles(hmd.orientation);
 	vec3_t hmdAngles = {hmdEuler.x, hmdEuler.y, hmdEuler.z};
 	vec3_t weaponAngles = {euler.x, euler.y, euler.z};
+	vec3_t weaponPosition = {pose.position.x, pose.position.y, pose.position.z};
 	vec3_t hmdPosition = {hmd.position.x, hmd.position.y, hmd.position.z};
 
 	// Menu control
@@ -1539,10 +1548,11 @@ void Host_VRInput( void )
 	static float hmdAltitude = 0;
 	if (gameMode) {
 		Host_VRButtonMapping(!rightHanded, lbuttons, rbuttons);
-		Host_VRMovement(hmdAltitude, hmdPosition, left.x, left.y, hmdAngles[YAW]);
-		Host_VRRotations(zoomed, hmdAngles, weaponAngles, right.x);
+		Host_VRWeaponPosition(hmdAngles, hmdPosition, weaponPosition);
 		Host_VRWeaponChange(right.y);
 		Host_VRWeaponCrosshair();
+		Host_VRMovement(hmdAltitude, hmdPosition, left.x, left.y, hmdAngles[YAW]);
+		Host_VRRotations(zoomed, hmdAngles, weaponAngles, right.x);
 	} else {
 		// Measure player when not in game mode
 		hmdAltitude = hmd.position.y;
@@ -1719,6 +1729,7 @@ void Host_VRRotations( bool zoomed, vec3_t hmdAngles, vec3_t weaponAngles, float
 	}
 	lastYaw = weaponAngles[YAW];
 	lastPitch = weaponAngles[PITCH];
+	Cvar_SetValue("vr_weapon_roll", weaponAngles[ROLL]);
 
 	// Snap turn
 	float snapTurnStep = 0;
@@ -1782,4 +1793,15 @@ void Host_VRWeaponCrosshair()
 	TriWorldToScreen(vecEnd, screenPos);
 	Cvar_SetValue("vr_xhair_x", screenPos[0]);
 	Cvar_SetValue("vr_xhair_y", screenPos[1]);
+}
+
+void Host_VRWeaponPosition( vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponPosition )
+{
+	float yaw = DEG2RAD(hmdAngles[YAW]);
+	float dx = weaponPosition[0] - hmdPosition[0];
+	float dy = weaponPosition[1] - hmdPosition[1];
+	float dz = weaponPosition[2] - hmdPosition[2];
+	Cvar_SetValue("vr_weapon_x", dx * cos(yaw) - dz * sin(yaw));
+	Cvar_SetValue("vr_weapon_y", dy);
+	Cvar_SetValue("vr_weapon_z", dx * sin(yaw) + dz * cos(yaw));
 }
