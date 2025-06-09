@@ -239,7 +239,6 @@ static void Sys_PrintUsage( const char *exename )
 	Sys_Quit( NULL );
 }
 
-CVAR_DEFINE_AUTO( vr_fov_zoom, "0", FCVAR_MOVEVARS, "Zoom of the field of view" );
 CVAR_DEFINE_AUTO( vr_gamemode, "0", FCVAR_MOVEVARS, "Are we in the 3D VR mode?" );
 CVAR_DEFINE_AUTO( vr_hmd_offset, "0", FCVAR_MOVEVARS, "HMD height" );
 CVAR_DEFINE_AUTO( vr_hmd_pitch, "0", FCVAR_MOVEVARS, "Camera pitch angle" );
@@ -257,6 +256,7 @@ CVAR_DEFINE_AUTO( vr_stereo_side, "0", FCVAR_MOVEVARS, "Eye being drawn" );
 CVAR_DEFINE_AUTO( vr_worldscale, "30", FCVAR_MOVEVARS, "Sets the world scale for stereo separation" );
 CVAR_DEFINE_AUTO( vr_xhair_x, "0", FCVAR_MOVEVARS, "Cross-hair 2d position x" );
 CVAR_DEFINE_AUTO( vr_xhair_y, "0", FCVAR_MOVEVARS, "Cross-hair 2d position y" );
+CVAR_DEFINE_AUTO( vr_zoomed, "0", FCVAR_MOVEVARS, "Flag if the scene zoomed" );
 
 static void Sys_PrintBugcompUsage( const char *exename )
 {
@@ -1480,7 +1480,6 @@ void Cvar_LazySet(const char* name, float targetValue) {
 
 void Host_VRInit( void )
 {
-	Cvar_RegisterVariable( &vr_fov_zoom );
 	Cvar_RegisterVariable( &vr_gamemode );
 	Cvar_RegisterVariable( &vr_hmd_offset );
 	Cvar_RegisterVariable( &vr_hmd_pitch );
@@ -1498,6 +1497,7 @@ void Host_VRInit( void )
 	Cvar_RegisterVariable( &vr_worldscale );
 	Cvar_RegisterVariable( &vr_xhair_x );
 	Cvar_RegisterVariable( &vr_xhair_y );
+	Cvar_RegisterVariable( &vr_zoomed );
 }
 
 void Host_VRInput( void )
@@ -1513,7 +1513,7 @@ void Host_VRInput( void )
 	XrVector2f right = IN_VRGetJoystickState(1);
 
 	// Get euler angles
-	bool zoomed = Cvar_VariableValue("vr_fov_zoom") > 1.1f;
+	bool zoomed = Cvar_VariableValue("vr_zoomed") > 0;
 	XrVector3f euler = XrQuaternionf_ToEulerAngles(zoomed ? hmd.orientation : pose.orientation);
 	XrVector3f hmdEuler = XrQuaternionf_ToEulerAngles(hmd.orientation);
 	vec3_t hmdAngles = {hmdEuler.x, hmdEuler.y, hmdEuler.z};

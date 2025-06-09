@@ -358,19 +358,19 @@ void R_SetupFrustum( void )
 	// build the transformation matrix for the given view angles
 	AngleVectors( RI.viewangles, RI.vforward, RI.vright, RI.vup );
 
-	// Use VR camera only when not zoomed
-	if (gEngfuncs.pfnGetCvarFloat("vr_fov_zoom") < 1.1f)
-	{
-		// Share player transform with the client
-		gEngfuncs.Cvar_SetValue("vr_player_dir_x", RI.vforward[0]);
-		gEngfuncs.Cvar_SetValue("vr_player_dir_y", RI.vforward[1]);
-		gEngfuncs.Cvar_SetValue("vr_player_dir_z", RI.vforward[2]);
-		gEngfuncs.Cvar_SetValue("vr_player_pos_x", RI.vieworg[0]);
-		gEngfuncs.Cvar_SetValue("vr_player_pos_y", RI.vieworg[1]);
-		gEngfuncs.Cvar_SetValue("vr_player_pos_z", RI.vieworg[2]);
-		gEngfuncs.Cvar_SetValue("vr_player_pitch", RI.viewangles[0]);
-		gEngfuncs.Cvar_SetValue("vr_player_yaw", RI.viewangles[1]);
+	// Share player transform with the client
+	gEngfuncs.Cvar_SetValue("vr_player_dir_x", RI.vforward[0]);
+	gEngfuncs.Cvar_SetValue("vr_player_dir_y", RI.vforward[1]);
+	gEngfuncs.Cvar_SetValue("vr_player_dir_z", RI.vforward[2]);
+	gEngfuncs.Cvar_SetValue("vr_player_pos_x", RI.vieworg[0]);
+	gEngfuncs.Cvar_SetValue("vr_player_pos_y", RI.vieworg[1]);
+	gEngfuncs.Cvar_SetValue("vr_player_pos_z", RI.vieworg[2]);
+	gEngfuncs.Cvar_SetValue("vr_player_pitch", RI.viewangles[0]);
+	gEngfuncs.Cvar_SetValue("vr_player_yaw", RI.viewangles[1]);
 
+	// Use VR camera only when not zoomed
+	if (gEngfuncs.pfnGetCvarFloat("vr_zoomed") < 1)
+	{
 		// VR camera
 		RI.viewangles[0] = gEngfuncs.pfnGetCvarFloat("vr_hmd_pitch");
 		RI.viewangles[1] = gEngfuncs.pfnGetCvarFloat("vr_hmd_yaw");
