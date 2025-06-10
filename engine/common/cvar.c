@@ -792,7 +792,7 @@ void Cvar_FullSet( const char *var_name, const char *value, int flags )
 
 /*
 ============
-Cvar_Set
+Cvar_LazySet
 ============
 */
 void GAME_EXPORT Cvar_LazySet( const char *var_name, float targetValue )
