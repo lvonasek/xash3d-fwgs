@@ -1588,6 +1588,8 @@ void Host_VRButtonMapping( bool swapped, int lbuttons, int rbuttons )
 	Host_VRButtonMap(leftPrimaryButton, lbuttons, lastlbuttons, "drop");
 	Host_VRButtonMap(leftSecondaryButton, lbuttons, lastlbuttons, "impulse 201");
 	Host_VRButtonMap(leftSecondaryButton, lbuttons, lastlbuttons, "nightvision");
+	Host_VRButtonMap(leftSecondaryButton, lbuttons, lastlbuttons, "showscoreboard2 0.213333 0.835556 0.213333 0.835556 0 0 0 128");
+	Host_VRButtonMap(leftSecondaryButton, lastlbuttons, lbuttons, "hidescoreboard2");
 	Host_VRButtonMap(ovrButton_Trigger, lbuttons, lastlbuttons, "+use");
 	Host_VRButtonMap(ovrButton_Trigger, lbuttons, lastlbuttons, "buy");
 	Host_VRButtonMap(ovrButton_Joystick, lbuttons, lastlbuttons, "exec touch/cmd/cmd");
