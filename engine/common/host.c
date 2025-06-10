@@ -1543,11 +1543,10 @@ void Host_VRInput( void )
 	// In-game input
 	static float hmdAltitude = 0;
 	if (gameMode) {
-		Host_VRButtonMapping(!rightHanded, lbuttons, rbuttons);
-		Host_VRWeaponPosition(hmdAltitude, hmdAngles, weaponPosition);
+		Host_VRButtonMapping(!rightHanded, lbuttons, rbuttons, left.x, left.y);
 		Host_VRWeaponChange(right.y);
 		Host_VRWeaponCrosshair();
-		Host_VRMovement(hmdAltitude, hmdPosition, left.x, left.y, hmdAngles[YAW]);
+		Host_VRMovement(zoomed, hmdAltitude, hmdAngles, hmdPosition, weaponPosition);
 		Host_VRRotations(zoomed, hmdAngles, weaponAngles, right.x);
 	} else {
 		// Measure player when not in game mode
@@ -1574,7 +1573,7 @@ void Host_VRButtonMap( int button, int currentButtons, int lastButtons, const ch
 	}
 }
 
-void Host_VRButtonMapping( bool swapped, int lbuttons, int rbuttons )
+void Host_VRButtonMapping( bool swapped, int lbuttons, int rbuttons, float thumbstickX, float thumbstickY )
 {
 	int leftPrimaryButton = swapped ? ovrButton_A : ovrButton_X;
 	int leftSecondaryButton = swapped ? ovrButton_B : ovrButton_Y;
@@ -1599,6 +1598,11 @@ void Host_VRButtonMapping( bool swapped, int lbuttons, int rbuttons )
 	Host_VRButtonMap(ovrButton_Joystick, rbuttons, lastrbuttons, "+attack2");
 	Host_VRButtonMap(ovrButton_GripTrigger, rbuttons, lastrbuttons, "+reload");
 	lastrbuttons = rbuttons;
+
+	// Thumbstick movement
+	if (fabs(thumbstickX) < 0.15) thumbstickX = 0;
+	if (fabs(thumbstickY) < 0.15) thumbstickY = 0;
+	clgame.dllFuncs.pfnMoveEvent( thumbstickY, thumbstickX );
 }
 
 bool Host_VRConfig()
@@ -1703,25 +1707,24 @@ bool Host_VRMenuInput( bool cursorActive, bool gameMode, bool swapped, int lbutt
 	return pressedInUI;
 }
 
-void Host_VRMovement( float hmdAltitude, vec3_t hmdPosition, float thumbstickX, float thumbstickY, float yaw )
+void Host_VRMovement( bool zoomed, float hmdAltitude, vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponPosition )
 {
-	// Camera movement
+	float yaw = DEG2RAD(hmdAngles[YAW]);
 	float scale = Cvar_VariableValue("vr_worldscale");
-	float side = hmdPosition[0] * cos(DEG2RAD(-yaw)) - hmdPosition[2] * sin(DEG2RAD(-yaw));
-	float fwd = hmdPosition[0] * sin(DEG2RAD(-yaw)) + hmdPosition[2] * cos(DEG2RAD(-yaw));
-	vec3_t movement = {};
-	/*movement[0] -= Cvar_VariableValue("vr_player_dir_x") * fwd * scale;
-	movement[1] -= Cvar_VariableValue("vr_player_dir_y") * fwd * scale;
-	movement[2] -= Cvar_VariableValue("vr_player_dir_z") * fwd * scale;*/
-	movement[2] += (hmdPosition[1] - hmdAltitude) * scale;
-	Cvar_SetValue("vr_camera_x",  movement[0]);
-	Cvar_SetValue("vr_camera_y",  movement[1]);
-	Cvar_SetValue("vr_camera_z",  movement[2]);
 
-	// Thumbstick movement
-	if (fabs(thumbstickX) < 0.15) thumbstickX = 0;
-	if (fabs(thumbstickY) < 0.15) thumbstickY = 0;
-	clgame.dllFuncs.pfnMoveEvent( thumbstickY, thumbstickX );
+	// Camera movement
+	float dx = hmdPosition[0] * scale;
+	float dz = hmdPosition[2] * scale;
+	Cvar_SetValue("vr_camera_x", zoomed ? dx * cos(yaw) - dz * sin(yaw) : 0);
+	Cvar_SetValue("vr_camera_y", zoomed ? dx * sin(yaw) + dz * cos(yaw) : 0);
+	Cvar_SetValue("vr_camera_z", zoomed ? (hmdPosition[1] - hmdAltitude) * scale : 0);
+
+	// Weapon movement
+	dx = weaponPosition[0] * scale;
+	dz = weaponPosition[2] * scale;
+	Cvar_SetValue("vr_weapon_x", zoomed ? dx * cos(yaw) - dz * sin(yaw) : 0);
+	Cvar_SetValue("vr_weapon_y", zoomed ? dx * sin(yaw) + dz * cos(yaw) : 0);
+	Cvar_SetValue("vr_weapon_z", zoomed ? (weaponPosition[1] - hmdAltitude) * scale : 0);
 }
 
 void Host_VRRotations( bool zoomed, vec3_t hmdAngles, vec3_t weaponAngles, float thumbstickX )
@@ -1801,15 +1804,4 @@ void Host_VRWeaponCrosshair()
 	TriWorldToScreen(vecEnd, screenPos);
 	Cvar_SetValue("vr_xhair_x", screenPos[0]);
 	Cvar_SetValue("vr_xhair_y", screenPos[1]);
-}
-
-void Host_VRWeaponPosition( float hmdAltitude, vec3_t hmdAngles, vec3_t weaponPosition )
-{
-	float yaw = DEG2RAD(hmdAngles[YAW]);
-	float scale = Cvar_VariableValue("vr_worldscale");
-	float dx = weaponPosition[0] * scale;
-	float dz = weaponPosition[2] * scale;
-	Cvar_SetValue("vr_weapon_x", dx * cos(yaw) - dz * sin(yaw));
-	Cvar_SetValue("vr_weapon_y", dx * sin(yaw) + dz * cos(yaw));
-	Cvar_SetValue("vr_weapon_z", (weaponPosition[1] - hmdAltitude) * scale);
 }

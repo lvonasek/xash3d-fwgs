@@ -390,10 +390,17 @@ void R_SetupFrustum( void )
 		RI.viewangles[2] = gEngfuncs.pfnGetCvarFloat("vr_hmd_roll");
 	}
 
+	// Get camera offset
+	float dx = gEngfuncs.pfnGetCvarFloat("vr_camera_x");
+	float dy = gEngfuncs.pfnGetCvarFloat("vr_camera_y");
+	float dz = gEngfuncs.pfnGetCvarFloat("vr_camera_z");
+
 	// VR camera translation
-	RI.vieworg[0] += gEngfuncs.pfnGetCvarFloat("vr_camera_x");
-	RI.vieworg[1] += gEngfuncs.pfnGetCvarFloat("vr_camera_y");
-	RI.vieworg[2] += gEngfuncs.pfnGetCvarFloat("vr_camera_z");
+	for (int i = 0; i < 3; i++) {
+		RI.vieworg[i] -= RI.vright[i] * dx;
+		RI.vieworg[i] -= RI.vforward[i] * dy;
+		RI.vieworg[i] += RI.vup[i] * dz;
+	}
 
 	if( !r_lockfrustum.value )
 	{
