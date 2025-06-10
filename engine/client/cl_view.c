@@ -250,6 +250,8 @@ static float V_CalcFov( float *fov_x, float width, float height )
 	return RAD2DEG( half_fov_y ) * 2;
 }
 
+extern void Cvar_LazySet(const char* name, float targetValue);
+
 /*
 ====================
 V_AdjustFov
@@ -280,7 +282,7 @@ static void V_AdjustFov( float *fov_x, float *fov_y, float width, float height, 
 
 	*fov_x *= VR_GetConfigFloat(VR_CONFIG_VIEWPORT_FOVX) / 90.0f;
 	*fov_y *= VR_GetConfigFloat(VR_CONFIG_VIEWPORT_FOVY) / 90.0f;
-	Cvar_SetValue("vr_zoomed", VR_GetConfigFloat(VR_CONFIG_VIEWPORT_FOVY) / *fov_y > 1.1f ? 1 : 0);
+	Cvar_LazySet("vr_zoomed", VR_GetConfigFloat(VR_CONFIG_VIEWPORT_FOVY) / *fov_y > 1.1f ? 1 : 0);
 }
 
 /*

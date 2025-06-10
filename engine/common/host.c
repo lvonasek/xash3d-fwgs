@@ -809,6 +809,13 @@ static qboolean Host_FilterTime( double time )
 	return true;
 }
 
+void Cvar_LazySet(const char* name, float targetValue) {
+	float currentValue = Cvar_VariableValue(name);
+	if (fabs(currentValue - targetValue) > 0.01f) {
+		Cvar_SetValue(name, targetValue);
+	}
+}
+
 /*
 =================
 Host_Frame
@@ -832,7 +839,7 @@ void Host_Frame( double time )
 	}
 	bool gameMode = !host.mouse_visible && cls.state == ca_active && cls.key_dest == key_game;
 	VR_SetConfig(VR_CONFIG_MODE, gameMode ? VR_MODE_STEREO_6DOF : VR_MODE_MONO_SCREEN);
-	Cvar_SetValue("vr_gamemode", gameMode ? 1 : 0);
+	Cvar_LazySet("vr_gamemode", gameMode ? 1 : 0);
 
 	double t1;
 
@@ -1472,14 +1479,6 @@ void Host_ShutdownWithReason( const char *reason )
 	// restore filter
 	Sys_RestoreCrashHandler();
 	Sys_CloseLog( reason );
-}
-
-
-void Cvar_LazySet(const char* name, float targetValue) {
-	float currentValue = Cvar_VariableValue(name);
-	if (fabs(currentValue - targetValue) > 0.01f) {
-		Cvar_SetValue(name, targetValue);
-	}
 }
 
 void Host_VRInit( void )
