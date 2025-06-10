@@ -1693,6 +1693,14 @@ bool Host_VRMenuInput( bool cursorActive, bool gameMode, bool swapped, int lbutt
 	}
 	lastEscape = escape;
 
+	// Thumbstick close key
+	bool thumbstick = lbuttons & ovrButton_Joystick;
+	static bool lastThumbstick = false;
+	if (thumbstick && !lastThumbstick) {
+		Cbuf_AddText( "touch_setclientonly 0\n" );
+	}
+	lastThumbstick = thumbstick;
+
 	return pressedInUI;
 }
 
