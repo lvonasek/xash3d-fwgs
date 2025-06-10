@@ -1712,19 +1712,30 @@ void Host_VRMovement( bool zoomed, float hmdAltitude, vec3_t hmdAngles, vec3_t h
 	float yaw = DEG2RAD(hmdAngles[YAW]);
 	float scale = Cvar_VariableValue("vr_worldscale");
 
+	// Recenter if player position changed way too much
+	vec3_t currentPosition;
+	static vec3_t lastPosition = {};
+	currentPosition[0] = Cvar_VariableValue("vr_player_pos_x");
+	currentPosition[1] = Cvar_VariableValue("vr_player_pos_y");
+	currentPosition[2] = Cvar_VariableValue("vr_player_pos_z");
+	if (VectorDistance(currentPosition, lastPosition) > scale) {
+		VR_Recenter(VR_GetEngine());
+	}
+	VectorCopy(currentPosition, lastPosition);
+
 	// Camera movement
 	float dx = hmdPosition[0] * scale;
 	float dz = hmdPosition[2] * scale;
-	Cvar_SetValue("vr_camera_x", zoomed ? dx * cos(yaw) - dz * sin(yaw) : 0);
-	Cvar_SetValue("vr_camera_y", zoomed ? dx * sin(yaw) + dz * cos(yaw) : 0);
-	Cvar_SetValue("vr_camera_z", zoomed ? (hmdPosition[1] - hmdAltitude) * scale : 0);
+	Cvar_SetValue("vr_camera_x", zoomed ? 0 : dx * cos(yaw) - dz * sin(yaw));
+	Cvar_SetValue("vr_camera_y", zoomed ? 0 : dx * sin(yaw) + dz * cos(yaw));
+	Cvar_SetValue("vr_camera_z", zoomed ? 0 : (hmdPosition[1] - hmdAltitude) * scale);
 
 	// Weapon movement
 	dx = weaponPosition[0] * scale;
 	dz = weaponPosition[2] * scale;
-	Cvar_SetValue("vr_weapon_x", zoomed ? dx * cos(yaw) - dz * sin(yaw) : 0);
-	Cvar_SetValue("vr_weapon_y", zoomed ? dx * sin(yaw) + dz * cos(yaw) : 0);
-	Cvar_SetValue("vr_weapon_z", zoomed ? (weaponPosition[1] - hmdAltitude) * scale : 0);
+	Cvar_SetValue("vr_weapon_x", zoomed ? INT_MAX : dx * cos(yaw) - dz * sin(yaw));
+	Cvar_SetValue("vr_weapon_y", zoomed ? INT_MAX : dx * sin(yaw) + dz * cos(yaw));
+	Cvar_SetValue("vr_weapon_z", zoomed ? INT_MAX : (weaponPosition[1] - hmdAltitude) * scale);
 }
 
 void Host_VRRotations( bool zoomed, vec3_t hmdAngles, vec3_t weaponAngles, float thumbstickX )
