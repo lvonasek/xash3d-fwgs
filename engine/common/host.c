@@ -809,13 +809,6 @@ static qboolean Host_FilterTime( double time )
 	return true;
 }
 
-void Cvar_LazySet(const char* name, float targetValue) {
-	float currentValue = Cvar_VariableValue(name);
-	if (fabs(currentValue - targetValue) > 0.01f) {
-		Cvar_SetValue(name, targetValue);
-	}
-}
-
 /*
 =================
 Host_Frame

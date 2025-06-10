@@ -250,8 +250,6 @@ static float V_CalcFov( float *fov_x, float width, float height )
 	return RAD2DEG( half_fov_y ) * 2;
 }
 
-extern void Cvar_LazySet(const char* name, float targetValue);
-
 /*
 ====================
 V_AdjustFov
