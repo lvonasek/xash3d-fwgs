@@ -368,7 +368,7 @@ void R_SetupFrustum( void )
 	gEngfuncs.Cvar_SetValue("vr_player_pitch", RI.viewangles[0]);
 	gEngfuncs.Cvar_SetValue("vr_player_yaw", RI.viewangles[1]);
 
-	// Use VR camera only when not zoomed
+	// Use VR camera angles only when not zoomed
 	if (gEngfuncs.pfnGetCvarFloat("vr_zoomed") < 1)
 	{
 		// VR camera
@@ -389,6 +389,11 @@ void R_SetupFrustum( void )
 	} else {
 		RI.viewangles[2] = gEngfuncs.pfnGetCvarFloat("vr_hmd_roll");
 	}
+
+	// VR camera translation
+	RI.vieworg[0] += gEngfuncs.pfnGetCvarFloat("vr_camera_x");
+	RI.vieworg[1] += gEngfuncs.pfnGetCvarFloat("vr_camera_y");
+	RI.vieworg[2] += gEngfuncs.pfnGetCvarFloat("vr_camera_z");
 
 	if( !r_lockfrustum.value )
 	{
@@ -444,11 +449,10 @@ static void R_SetupModelviewMatrix( matrix4x4 m )
 	Matrix4x4_ConcatTranslate(m, 0, gEngfuncs.pfnGetCvarFloat("vr_worldscale") * (VR_IPD / 2.0f) *
 											((gEngfuncs.pfnGetCvarFloat("vr_stereo_side") - 0.5f) * 2.0f), 0);
 
-	float offset = gEngfuncs.pfnGetCvarFloat("vr_hmd_offset") * gEngfuncs.pfnGetCvarFloat("vr_worldscale");
 	Matrix4x4_ConcatRotate( m, -RI.viewangles[2], 1, 0, 0 );
 	Matrix4x4_ConcatRotate( m, -RI.viewangles[0], 0, 1, 0 );
 	Matrix4x4_ConcatRotate( m, -RI.viewangles[1], 0, 0, 1 );
-	Matrix4x4_ConcatTranslate( m, -RI.vieworg[0], -RI.vieworg[1], -RI.vieworg[2] - offset );
+	Matrix4x4_ConcatTranslate( m, -RI.vieworg[0], -RI.vieworg[1], -RI.vieworg[2] );
 }
 
 /*

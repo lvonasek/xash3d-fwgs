@@ -239,8 +239,10 @@ static void Sys_PrintUsage( const char *exename )
 	Sys_Quit( NULL );
 }
 
+CVAR_DEFINE_AUTO( vr_camera_x, "0", FCVAR_MOVEVARS, "Offset x of the camera" );
+CVAR_DEFINE_AUTO( vr_camera_y, "0", FCVAR_MOVEVARS, "Offset y of the camera" );
+CVAR_DEFINE_AUTO( vr_camera_z, "0", FCVAR_MOVEVARS, "Offset z of the camera" );
 CVAR_DEFINE_AUTO( vr_gamemode, "0", FCVAR_MOVEVARS, "Are we in the 3D VR mode?" );
-CVAR_DEFINE_AUTO( vr_hmd_offset, "0", FCVAR_MOVEVARS, "HMD height" );
 CVAR_DEFINE_AUTO( vr_hmd_pitch, "0", FCVAR_MOVEVARS, "Camera pitch angle" );
 CVAR_DEFINE_AUTO( vr_hmd_yaw, "0", FCVAR_MOVEVARS, "Camera yaw angle" );
 CVAR_DEFINE_AUTO( vr_hmd_roll, "0", FCVAR_MOVEVARS, "Camera roll angle" );
@@ -1476,8 +1478,10 @@ void Host_ShutdownWithReason( const char *reason )
 
 void Host_VRInit( void )
 {
+	Cvar_RegisterVariable( &vr_camera_x );
+	Cvar_RegisterVariable( &vr_camera_y );
+	Cvar_RegisterVariable( &vr_camera_z );
 	Cvar_RegisterVariable( &vr_gamemode );
-	Cvar_RegisterVariable( &vr_hmd_offset );
 	Cvar_RegisterVariable( &vr_hmd_pitch );
 	Cvar_RegisterVariable( &vr_hmd_yaw );
 	Cvar_RegisterVariable( &vr_hmd_roll );
@@ -1701,20 +1705,15 @@ bool Host_VRMenuInput( bool cursorActive, bool gameMode, bool swapped, int lbutt
 
 void Host_VRMovement( float hmdAltitude, vec3_t hmdPosition, float thumbstickX, float thumbstickY, float yaw )
 {
-	//Cvar_SetValue("vr_hmd_offset",  hmdPosition[1] - hmdAltitude);
+	// Camera movement
+	float scale = Cvar_VariableValue("vr_worldscale");
+	Cvar_SetValue("vr_camera_z",  (hmdPosition[1] - hmdAltitude) * scale);
+
+	// Thumbstick movement
 	static float lastHmdX = 0;
 	static float lastHmdY = 0;
-	float s = sin(ToRadians(yaw));
-	float c = cos(ToRadians(yaw));
 	if (fabs(thumbstickX) < 0.15) thumbstickX = 0;
 	if (fabs(thumbstickY) < 0.15) thumbstickY = 0;
-	float scale = Cvar_VariableValue("vr_worldscale");
-	float hmdX = hmdPosition[0] * scale * c - hmdPosition[2] * scale * s;
-	float hmdY = hmdPosition[0] * scale * s + hmdPosition[2] * scale * c;
-	//left.x += hmdX - lastHmdX;
-	//left.y -= hmdY - lastHmdY;
-	lastHmdX = hmdX;
-	lastHmdY = hmdY;
 	clgame.dllFuncs.pfnMoveEvent( thumbstickY, thumbstickX );
 }
 
@@ -1800,10 +1799,11 @@ void Host_VRWeaponCrosshair()
 void Host_VRWeaponPosition( vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponPosition )
 {
 	float yaw = DEG2RAD(hmdAngles[YAW]);
-	float dx = weaponPosition[0] - hmdPosition[0];
-	float dy = weaponPosition[1] - hmdPosition[1];
-	float dz = weaponPosition[2] - hmdPosition[2];
+	float scale = Cvar_VariableValue("vr_worldscale");
+	float dx = (weaponPosition[0] - hmdPosition[0]) * scale;
+	float dy = (weaponPosition[1] - hmdPosition[1]) * scale;
+	float dz = (weaponPosition[2] - hmdPosition[2]) * scale;
 	Cvar_SetValue("vr_weapon_x", dx * cos(yaw) - dz * sin(yaw));
-	Cvar_SetValue("vr_weapon_y", dy);
-	Cvar_SetValue("vr_weapon_z", dx * sin(yaw) + dz * cos(yaw));
+	Cvar_SetValue("vr_weapon_y", dx * sin(yaw) + dz * cos(yaw));
+	Cvar_SetValue("vr_weapon_z", dy);
 }
