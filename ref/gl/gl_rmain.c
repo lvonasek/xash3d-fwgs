@@ -396,11 +396,17 @@ void R_SetupFrustum( void )
 	float dz = gEngfuncs.pfnGetCvarFloat("vr_camera_z");
 
 	// VR camera translation
-	for (int i = 0; i < 3; i++) {
-		RI.vieworg[i] -= RI.vright[i] * dx;
-		RI.vieworg[i] -= RI.vforward[i] * dy;
-		RI.vieworg[i] += RI.vup[i] * dz;
-	}
+	vec3_t fwd = {};
+	vec3_t right = {};
+	fwd[0] = RI.vforward[0];
+	fwd[1] = RI.vforward[1];
+	right[0] = RI.vright[0];
+	right[1] = RI.vright[1];
+	VectorNormalize(fwd);
+	VectorNormalize(right);
+	RI.vieworg[0] -= right[0] * dx + fwd[0] * dy;
+	RI.vieworg[1] -= right[1] * dx + fwd[1] * dy;
+	RI.vieworg[2] += dz;
 
 	if( !r_lockfrustum.value )
 	{
