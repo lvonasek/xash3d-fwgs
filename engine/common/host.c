@@ -239,6 +239,7 @@ static void Sys_PrintUsage( const char *exename )
 	Sys_Quit( NULL );
 }
 
+CVAR_DEFINE_AUTO( vr_6dof, "0", FCVAR_MOVEVARS, "Use 6DoF world tracking" );
 CVAR_DEFINE_AUTO( vr_camera_x, "0", FCVAR_MOVEVARS, "Offset x of the camera" );
 CVAR_DEFINE_AUTO( vr_camera_y, "0", FCVAR_MOVEVARS, "Offset y of the camera" );
 CVAR_DEFINE_AUTO( vr_camera_z, "0", FCVAR_MOVEVARS, "Offset z of the camera" );
@@ -1480,6 +1481,7 @@ void Host_ShutdownWithReason( const char *reason )
 
 void Host_VRInit( void )
 {
+	Cvar_RegisterVariable( &vr_6dof );
 	Cvar_RegisterVariable( &vr_camera_x );
 	Cvar_RegisterVariable( &vr_camera_y );
 	Cvar_RegisterVariable( &vr_camera_z );
