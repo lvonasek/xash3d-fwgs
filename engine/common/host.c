@@ -239,7 +239,7 @@ static void Sys_PrintUsage( const char *exename )
 	Sys_Quit( NULL );
 }
 
-CVAR_DEFINE_AUTO( vr_6dof, "0", FCVAR_MOVEVARS, "Use 6DoF world tracking" );
+CVAR_DEFINE_AUTO( vr_6dof, "0", FCVAR_ARCHIVE, "Use 6DoF world tracking" );
 CVAR_DEFINE_AUTO( vr_camera_x, "0", FCVAR_MOVEVARS, "Offset x of the camera" );
 CVAR_DEFINE_AUTO( vr_camera_y, "0", FCVAR_MOVEVARS, "Offset y of the camera" );
 CVAR_DEFINE_AUTO( vr_camera_z, "0", FCVAR_MOVEVARS, "Offset z of the camera" );
@@ -1729,19 +1729,20 @@ void Host_VRMovement( bool zoomed, float hmdAltitude, vec3_t hmdAngles, vec3_t h
 	VectorCopy(currentPosition, lastPosition);
 
 	// Camera movement
-	float yaw = DEG2RAD(hmdAngles[YAW]);
+	float hmdYaw = DEG2RAD(hmdAngles[YAW]);
 	float dx = hmdPosition[0] * scale;
 	float dz = hmdPosition[2] * scale;
-	Cvar_SetValue("vr_camera_x", zoomed ? 0 : dx * cos(yaw) - dz * sin(yaw));
-	Cvar_SetValue("vr_camera_y", zoomed ? 0 : dx * sin(yaw) + dz * cos(yaw));
+	Cvar_SetValue("vr_camera_x", zoomed ? 0 : dx * cos(hmdYaw) - dz * sin(hmdYaw));
+	Cvar_SetValue("vr_camera_y", zoomed ? 0 : dx * sin(hmdYaw) + dz * cos(hmdYaw));
 	Cvar_SetValue("vr_camera_z", zoomed ? 0 : (hmdPosition[1] - hmdAltitude) * scale);
 
 	// Weapon movement
-	yaw = DEG2RAD(weaponAngles[YAW]);
+	float weaponYaw = DEG2RAD(weaponAngles[YAW]);
 	dx = (weaponPosition[0] - hmdPosition[0]) * scale;
 	dz = (weaponPosition[2] - hmdPosition[2]) * scale;
-	float weaponX = dx * cos(yaw) - dz * sin(yaw);
-	float weaponY = dx * sin(yaw) + dz * cos(yaw);
+	//TODO: revisit this (hmdYaw is broken on X axis, weaponYav on Y axis but this isn't also correct)
+	float weaponX = dx * cos(weaponYaw) - dz * sin(weaponYaw);
+	float weaponY = dx * sin(hmdYaw) + dz * cos(hmdYaw);
 	Cvar_SetValue("vr_weapon_x", zoomed ? INT_MAX : weaponX);
 	Cvar_SetValue("vr_weapon_y", zoomed ? INT_MAX : weaponY);
 	Cvar_SetValue("vr_weapon_z", zoomed ? INT_MAX : (weaponPosition[1] - hmdAltitude) * scale);
