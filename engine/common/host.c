@@ -246,6 +246,8 @@ CVAR_DEFINE_AUTO( vr_gamemode, "0", FCVAR_MOVEVARS, "Are we in the 3D VR mode?" 
 CVAR_DEFINE_AUTO( vr_hmd_pitch, "0", FCVAR_MOVEVARS, "Camera pitch angle" );
 CVAR_DEFINE_AUTO( vr_hmd_yaw, "0", FCVAR_MOVEVARS, "Camera yaw angle" );
 CVAR_DEFINE_AUTO( vr_hmd_roll, "0", FCVAR_MOVEVARS, "Camera roll angle" );
+CVAR_DEFINE_AUTO( vr_offset_x, "0", FCVAR_MOVEVARS, "Offset x of the camera" );
+CVAR_DEFINE_AUTO( vr_offset_y, "0", FCVAR_MOVEVARS, "Offset y of the camera" );
 CVAR_DEFINE_AUTO( vr_player_dir_x, "0", FCVAR_MOVEVARS, "Direction x of the player" );
 CVAR_DEFINE_AUTO( vr_player_dir_y, "0", FCVAR_MOVEVARS, "Direction y of the player" );
 CVAR_DEFINE_AUTO( vr_player_dir_z, "0", FCVAR_MOVEVARS, "Direction z of the player" );
@@ -1485,6 +1487,8 @@ void Host_VRInit( void )
 	Cvar_RegisterVariable( &vr_hmd_pitch );
 	Cvar_RegisterVariable( &vr_hmd_yaw );
 	Cvar_RegisterVariable( &vr_hmd_roll );
+	Cvar_RegisterVariable( &vr_offset_x );
+	Cvar_RegisterVariable( &vr_offset_y );
 	Cvar_RegisterVariable( &vr_player_dir_x );
 	Cvar_RegisterVariable( &vr_player_dir_y );
 	Cvar_RegisterVariable( &vr_player_dir_z );
@@ -1546,7 +1550,7 @@ void Host_VRInput( void )
 		Host_VRButtonMapping(!rightHanded, lbuttons, rbuttons, left.x, left.y);
 		Host_VRWeaponChange(right.y);
 		Host_VRWeaponCrosshair();
-		Host_VRMovement(zoomed, hmdAltitude, hmdAngles, hmdPosition, weaponPosition);
+		Host_VRMovement(zoomed, hmdAltitude, hmdAngles, hmdPosition, weaponAngles, weaponPosition);
 		Host_VRRotations(zoomed, hmdAngles, weaponAngles, right.x);
 	} else {
 		// Measure player when not in game mode
@@ -1707,9 +1711,8 @@ bool Host_VRMenuInput( bool cursorActive, bool gameMode, bool swapped, int lbutt
 	return pressedInUI;
 }
 
-void Host_VRMovement( bool zoomed, float hmdAltitude, vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponPosition )
+void Host_VRMovement( bool zoomed, float hmdAltitude, vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponAngles, vec3_t weaponPosition )
 {
-	float yaw = DEG2RAD(hmdAngles[YAW]);
 	float scale = Cvar_VariableValue("vr_worldscale");
 
 	// Recenter if player position changed way too much
@@ -1724,6 +1727,7 @@ void Host_VRMovement( bool zoomed, float hmdAltitude, vec3_t hmdAngles, vec3_t h
 	VectorCopy(currentPosition, lastPosition);
 
 	// Camera movement
+	float yaw = DEG2RAD(hmdAngles[YAW]);
 	float dx = hmdPosition[0] * scale;
 	float dz = hmdPosition[2] * scale;
 	Cvar_SetValue("vr_camera_x", zoomed ? 0 : dx * cos(yaw) - dz * sin(yaw));
@@ -1731,10 +1735,13 @@ void Host_VRMovement( bool zoomed, float hmdAltitude, vec3_t hmdAngles, vec3_t h
 	Cvar_SetValue("vr_camera_z", zoomed ? 0 : (hmdPosition[1] - hmdAltitude) * scale);
 
 	// Weapon movement
-	dx = weaponPosition[0] * scale;
-	dz = weaponPosition[2] * scale;
-	Cvar_SetValue("vr_weapon_x", zoomed ? INT_MAX : dx * cos(yaw) - dz * sin(yaw));
-	Cvar_SetValue("vr_weapon_y", zoomed ? INT_MAX : dx * sin(yaw) + dz * cos(yaw));
+	yaw = DEG2RAD(weaponAngles[YAW]);
+	dx = (weaponPosition[0] - hmdPosition[0]) * scale;
+	dz = (weaponPosition[2] - hmdPosition[2]) * scale;
+	float weaponX = dx * cos(yaw) - dz * sin(yaw);
+	float weaponY = dx * sin(yaw) + dz * cos(yaw);
+	Cvar_SetValue("vr_weapon_x", zoomed ? INT_MAX : weaponX);
+	Cvar_SetValue("vr_weapon_y", zoomed ? INT_MAX : weaponY);
 	Cvar_SetValue("vr_weapon_z", zoomed ? INT_MAX : (weaponPosition[1] - hmdAltitude) * scale);
 }
 
