@@ -1565,17 +1565,39 @@ void Host_VRInput( void )
 
 void Host_VRButtonMap( int button, int currentButtons, int lastButtons, const char* action )
 {
+	// Detect if action should be called
 	bool down = currentButtons & button;
 	bool wasDown = lastButtons & button;
+	bool process = false;
+	bool invert = false;
 	if (down && !wasDown) {
+		process = true;
+	} else if (!down && wasDown) {
+		process = true;
+		invert = true;
+	}
+
+	// Process commands separated by a semicolon
+	if (process) {
+		int index = 0;
 		char command[256];
-		Q_snprintf( command, sizeof( command ), "%s\n", action );
-		Cbuf_AddText( command );
-	} else if (!down && wasDown && (action[0] == '+')) {
-		char command[256];
-		Q_snprintf( command, sizeof( command ), "%s\n", action );
-		command[0] = '-';
-		Cbuf_AddText( command );
+		for (int i = 0; i <= strlen(action); i++) {
+			if ((action[i] == ';') || (action[i] == '\000')) {
+				command[index++] = '\n';
+				command[index] = '\000';
+				if (invert) {
+					if (command[0] == '+') {
+						command[0] = '-';
+						Host_VRCustomCommand( command );
+					}
+				} else {
+					Host_VRCustomCommand( command );
+				}
+				index = 0;
+			} else {
+				command[index++] = action[i];
+			}
+		}
 	}
 }
 
@@ -1588,12 +1610,8 @@ void Host_VRButtonMapping( bool swapped, int lbuttons, int rbuttons, float thumb
 
 	static int lastlbuttons = 0;
 	Host_VRButtonMap(leftPrimaryButton, lbuttons, lastlbuttons, "drop");
-	Host_VRButtonMap(leftSecondaryButton, lbuttons, lastlbuttons, "impulse 201");
-	Host_VRButtonMap(leftSecondaryButton, lbuttons, lastlbuttons, "nightvision");
-	Host_VRButtonMap(leftSecondaryButton, lbuttons, lastlbuttons, "showscoreboard2 0.213333 0.835556 0.213333 0.835556 0 0 0 128");
-	Host_VRButtonMap(leftSecondaryButton, lastlbuttons, lbuttons, "hidescoreboard2");
-	Host_VRButtonMap(ovrButton_Trigger, lbuttons, lastlbuttons, "+use");
-	Host_VRButtonMap(ovrButton_Trigger, lbuttons, lastlbuttons, "buy");
+	Host_VRButtonMap(leftSecondaryButton, lbuttons, lastlbuttons, "impulse 201;nightvision;+vr_scoreboard");
+	Host_VRButtonMap(ovrButton_Trigger, lbuttons, lastlbuttons, "+use;buy");
 	Host_VRButtonMap(ovrButton_Joystick, lbuttons, lastlbuttons, "exec touch/cmd/cmd");
 	Host_VRButtonMap(ovrButton_GripTrigger, lbuttons, lastlbuttons, "+voicerecord");
 	lastlbuttons = lbuttons;
@@ -1646,6 +1664,17 @@ void Host_VRCursor( bool cursorActive, float x, float y, vec2_t cursor )
 	VR_SetConfig(VR_CONFIG_MOUSE_X, cursor[0]);
 	VR_SetConfig(VR_CONFIG_MOUSE_Y, height - cursor[1]);
 	VR_SetConfig(VR_CONFIG_MOUSE_SIZE, cursorActive ? 8 : 0);
+}
+
+void Host_VRCustomCommand( char* action )
+{
+	if (strcmp(action, "+vr_scoreboard\n") == 0) {
+		Cbuf_AddText( "showscoreboard2 0.213333 0.835556 0.213333 0.835556 0 0 0 128\n" );
+	} else if (strcmp(action, "-vr_scoreboard\n") == 0) {
+		Cbuf_AddText( "hidescoreboard2\n" );
+	} else {
+		Cbuf_AddText( action );
+	}
 }
 
 extern bool sdl_keyboard_requested;
