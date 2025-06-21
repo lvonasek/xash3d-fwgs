@@ -1558,8 +1558,8 @@ void Host_VRInput( void )
 		// Measure player when not in game mode
 		hmdAltitude = hmd.position.y;
 
-		// Zero movement when inactive
-		clgame.dllFuncs.pfnMoveEvent( 0, 0 );
+		// No game actions when UI is shown
+		Host_VRButtonMapping(!rightHanded, 0, 0, 0, 0);
 	}
 }
 
@@ -1707,6 +1707,11 @@ bool Host_VRMenuInput( bool cursorActive, bool gameMode, bool swapped, int lbutt
 	static bool lastThumbstick = false;
 	if (thumbstick && !lastThumbstick) {
 		Cbuf_AddText( "touch_setclientonly 0\n" );
+		if (!gameMode) {
+			pressedInUI = true;
+		}
+	} else if (!thumbstick && lastThumbstick) {
+		pressedInUI = false;
 	}
 	lastThumbstick = thumbstick;
 
