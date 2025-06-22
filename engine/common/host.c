@@ -277,6 +277,9 @@ CVAR_DEFINE_AUTO( vr_button_trigger_left, "+use;buy", FCVAR_ARCHIVE, "Controller
 CVAR_DEFINE_AUTO( vr_button_grip_right, "+reload", FCVAR_ARCHIVE, "Controller mapping" );
 CVAR_DEFINE_AUTO( vr_button_joystick_right, "+attack2", FCVAR_ARCHIVE, "Controller mapping" );
 CVAR_DEFINE_AUTO( vr_button_trigger_right, "+attack", FCVAR_ARCHIVE, "Controller mapping" );
+CVAR_DEFINE_AUTO( vr_thumbstick_deadzone_left, "0.15", FCVAR_ARCHIVE, "Deadzone of thumbstick to filter drift" );
+CVAR_DEFINE_AUTO( vr_thumbstick_deadzone_right, "0.8", FCVAR_ARCHIVE, "Deadzone of thumbstick to filter drift" );
+CVAR_DEFINE_AUTO( vr_thumbstick_snapturn, "45", FCVAR_ARCHIVE, "Angle to rotate by a thumbstick" );
 CVAR_DEFINE_AUTO( vr_worldscale, "30", FCVAR_ARCHIVE, "Sets the world scale for stereo separation" );
 
 static void Sys_PrintBugcompUsage( const char *exename )
@@ -1511,6 +1514,9 @@ void Host_VRInit( void )
 	Cvar_RegisterVariable( &vr_player_pitch );
 	Cvar_RegisterVariable( &vr_player_yaw );
 	Cvar_RegisterVariable( &vr_stereo_side );
+	Cvar_RegisterVariable( &vr_thumbstick_deadzone_left );
+	Cvar_RegisterVariable( &vr_thumbstick_deadzone_right );
+	Cvar_RegisterVariable( &vr_thumbstick_snapturn );
 	Cvar_RegisterVariable( &vr_weapon_roll );
 	Cvar_RegisterVariable( &vr_weapon_x );
 	Cvar_RegisterVariable( &vr_weapon_y );
@@ -1573,10 +1579,9 @@ void Host_VRInput( void )
 	static float hmdAltitude = 0;
 	if (gameMode) {
 		Host_VRButtonMapping(!rightHanded, lbuttons, rbuttons, left.x, left.y);
-		Host_VRWeaponChange(right.y);
 		Host_VRWeaponCrosshair();
 		Host_VRMovement(zoomed, hmdAltitude, hmdAngles, hmdPosition, weaponAngles, weaponPosition);
-		Host_VRRotations(zoomed, hmdAngles, weaponAngles, right.x);
+		Host_VRRotations(zoomed, hmdAngles, weaponAngles, right.x, right.y);
 	} else {
 		// Measure player when not in game mode
 		hmdAltitude = hmd.position.y;
@@ -1647,8 +1652,9 @@ void Host_VRButtonMapping( bool swapped, int lbuttons, int rbuttons, float thumb
 	lastrbuttons = rbuttons;
 
 	// Thumbstick movement
-	if (fabs(thumbstickX) < 0.15) thumbstickX = 0;
-	if (fabs(thumbstickY) < 0.15) thumbstickY = 0;
+	float deadzone = Cvar_VariableValue("vr_thumbstick_deadzone_left");
+	if (fabs(thumbstickX) < deadzone) thumbstickX = 0;
+	if (fabs(thumbstickY) < deadzone) thumbstickY = 0;
 	clgame.dllFuncs.pfnMoveEvent( thumbstickY, thumbstickX );
 }
 
@@ -1805,7 +1811,7 @@ void Host_VRMovement( bool zoomed, float hmdAltitude, vec3_t hmdAngles, vec3_t h
 	Cvar_SetValue("vr_weapon_z", zoomed ? INT_MAX : (weaponPosition[1] - hmdAltitude) * scale);
 }
 
-void Host_VRRotations( bool zoomed, vec3_t hmdAngles, vec3_t weaponAngles, float thumbstickX )
+void Host_VRRotations( bool zoomed, vec3_t hmdAngles, vec3_t weaponAngles, float thumbstickX, float thumbstickY )
 {
 	// Weapon rotation
 	static float lastYaw = 0;
@@ -1822,27 +1828,19 @@ void Host_VRRotations( bool zoomed, vec3_t hmdAngles, vec3_t weaponAngles, float
 
 	// Snap turn
 	float snapTurnStep = 0;
-	bool snapTurnDown = fabs(thumbstickX) > 0.8;
+	float deadzone = Cvar_VariableValue("vr_thumbstick_deadzone_right");
+	bool snapTurnDown = fabs(thumbstickX) > deadzone;
 	static bool lastSnapTurnDown = false;
 	if (snapTurnDown && !lastSnapTurnDown) {
-		snapTurnStep = thumbstickX > 0 ? -45 : 45;
+		float angle = Cvar_VariableValue("vr_thumbstick_snapturn");
+		snapTurnStep = thumbstickX > 0 ? -angle : angle;
 		yaw += snapTurnStep;
 	}
 	lastSnapTurnDown = snapTurnDown;
 	clgame.dllFuncs.pfnLookEvent( yaw, pitch );
 
-	// HMD view
-	static float lastWeaponYaw = 0;
-	hmdAngles[YAW] += Cvar_VariableValue("vr_player_yaw") - lastWeaponYaw;
-	Cvar_SetValue("vr_hmd_pitch", hmdAngles[PITCH]);
-	Cvar_SetValue("vr_hmd_yaw", hmdAngles[YAW] + snapTurnStep);
-	Cvar_SetValue("vr_hmd_roll", hmdAngles[ROLL]);
-	lastWeaponYaw = weaponAngles[YAW];
-}
-
-void Host_VRWeaponChange( float thumbstickY )
-{
-	bool weaponChangeDown = fabs(thumbstickY) > 0.8;
+	// Weapon changing
+	bool weaponChangeDown = fabs(thumbstickY) > deadzone;
 	static bool lastWeaponChangeDown = false;
 	if (weaponChangeDown && !lastWeaponChangeDown) {
 		Cbuf_AddText( thumbstickY > 0 ? "invnext\n" : "invprev\n" );
@@ -1851,6 +1849,14 @@ void Host_VRWeaponChange( float thumbstickY )
 		Cbuf_AddText( "-attack\n" );
 	}
 	lastWeaponChangeDown = weaponChangeDown;
+
+	// HMD view
+	static float lastWeaponYaw = 0;
+	hmdAngles[YAW] += Cvar_VariableValue("vr_player_yaw") - lastWeaponYaw;
+	Cvar_SetValue("vr_hmd_pitch", hmdAngles[PITCH]);
+	Cvar_SetValue("vr_hmd_yaw", hmdAngles[YAW] + snapTurnStep);
+	Cvar_SetValue("vr_hmd_roll", hmdAngles[ROLL]);
+	lastWeaponYaw = weaponAngles[YAW];
 }
 
 void Host_VRWeaponCrosshair()
