@@ -1710,9 +1710,20 @@ extern bool sdl_keyboard_requested;
 
 bool Host_VRMenuInput( bool cursorActive, bool gameMode, bool swapped, int lbuttons, int rbuttons, vec2_t cursor )
 {
+	// Send enter when Keyboard released
+	static bool hadFocus = true;
+	bool hasFocus = host.status != HOST_NOFOCUS;
+	if (!hadFocus && hasFocus) {
+		if( cls.key_dest == key_console )
+			Key_Console( K_ENTER );
+		else
+			Key_Message( K_ENTER );
+	}
+	hadFocus = hasFocus;
+
 	// Deactivate temporary input when client restored focus
 	static struct timeval lastFocus;
-	if (host.status != HOST_NOFOCUS) {
+	if (hasFocus) {
 		gettimeofday(&lastFocus, NULL);
 	}
 	struct timeval currentTime;
