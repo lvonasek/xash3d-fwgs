@@ -257,6 +257,13 @@ CVAR_DEFINE_AUTO( vr_player_pos_z, "0", FCVAR_MOVEVARS, "Position z of the playe
 CVAR_DEFINE_AUTO( vr_player_pitch, "0", FCVAR_MOVEVARS, "Pinch angle of the player" );
 CVAR_DEFINE_AUTO( vr_player_yaw, "0", FCVAR_MOVEVARS, "Yaw angle of the player" );
 CVAR_DEFINE_AUTO( vr_stereo_side, "0", FCVAR_MOVEVARS, "Eye being drawn" );
+CVAR_DEFINE_AUTO( vr_weapon_pivot_name, "0", FCVAR_MOVEVARS, "Current weapon name" );
+CVAR_DEFINE_AUTO( vr_weapon_pivot_pitch, "0", FCVAR_MOVEVARS, "Weapon pivot pitch" );
+CVAR_DEFINE_AUTO( vr_weapon_pivot_scale, "0", FCVAR_MOVEVARS, "Weapon pivot scale" );
+CVAR_DEFINE_AUTO( vr_weapon_pivot_yaw, "0", FCVAR_MOVEVARS, "Weapon pivot yaw" );
+CVAR_DEFINE_AUTO( vr_weapon_pivot_x, "0", FCVAR_MOVEVARS, "Weapon pivot position x" );
+CVAR_DEFINE_AUTO( vr_weapon_pivot_y, "0", FCVAR_MOVEVARS, "Weapon pivot position y" );
+CVAR_DEFINE_AUTO( vr_weapon_pivot_z, "0", FCVAR_MOVEVARS, "Weapon pivot position z" );
 CVAR_DEFINE_AUTO( vr_weapon_roll, "0", FCVAR_MOVEVARS, "Weapon roll angle" );
 CVAR_DEFINE_AUTO( vr_weapon_x, "0", FCVAR_MOVEVARS, "Weapon position x" );
 CVAR_DEFINE_AUTO( vr_weapon_y, "0", FCVAR_MOVEVARS, "Weapon position y" );
@@ -1520,6 +1527,13 @@ void Host_VRInit( void )
 	Cvar_RegisterVariable( &vr_thumbstick_deadzone_left );
 	Cvar_RegisterVariable( &vr_thumbstick_deadzone_right );
 	Cvar_RegisterVariable( &vr_thumbstick_snapturn );
+	Cvar_RegisterVariable( &vr_weapon_pivot_name );
+	Cvar_RegisterVariable( &vr_weapon_pivot_pitch );
+	Cvar_RegisterVariable( &vr_weapon_pivot_scale );
+	Cvar_RegisterVariable( &vr_weapon_pivot_yaw );
+	Cvar_RegisterVariable( &vr_weapon_pivot_x );
+	Cvar_RegisterVariable( &vr_weapon_pivot_y );
+	Cvar_RegisterVariable( &vr_weapon_pivot_z );
 	Cvar_RegisterVariable( &vr_weapon_roll );
 	Cvar_RegisterVariable( &vr_weapon_x );
 	Cvar_RegisterVariable( &vr_weapon_y );
