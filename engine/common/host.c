@@ -1827,11 +1827,9 @@ void Host_VRMovement( bool zoomed, float hmdAltitude, vec3_t hmdAngles, vec3_t h
 	Cvar_SetValue("vr_camera_z", zoomed ? 0 : (hmdPosition[1] - hmdAltitude) * scale);
 
 	// Weapon movement
-	float weaponYaw = DEG2RAD(weaponAngles[YAW]);
 	dx = (weaponPosition[0] - hmdPosition[0]) * scale;
 	dy = (weaponPosition[2] - hmdPosition[2]) * scale;
-	//TODO: revisit this (hmdYaw is broken on X axis, weaponYav on Y axis but this isn't also correct)
-	float weaponX = dx * cos(weaponYaw) - dy * sin(weaponYaw);
+	float weaponX = dx * cos(hmdYaw) - dy * sin(hmdYaw);
 	float weaponY = dx * sin(hmdYaw) + dy * cos(hmdYaw);
 	Cvar_SetValue("vr_weapon_x", zoomed ? INT_MAX : weaponX);
 	Cvar_SetValue("vr_weapon_y", zoomed ? INT_MAX : weaponY);
