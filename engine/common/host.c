@@ -258,6 +258,7 @@ CVAR_DEFINE_AUTO( vr_player_pitch, "0", FCVAR_MOVEVARS, "Pinch angle of the play
 CVAR_DEFINE_AUTO( vr_player_yaw, "0", FCVAR_MOVEVARS, "Yaw angle of the player" );
 CVAR_DEFINE_AUTO( vr_stereo_side, "0", FCVAR_MOVEVARS, "Eye being drawn" );
 CVAR_DEFINE_AUTO( vr_weapon_calibration_on, "0", FCVAR_MOVEVARS, "Tool to calibrate weapons" );
+CVAR_DEFINE_AUTO( vr_weapon_calibration_update, "0", FCVAR_MOVEVARS, "Information to update calibration" );
 CVAR_DEFINE_AUTO( vr_weapon_pivot_name, "", FCVAR_MOVEVARS, "Current weapon name" );
 CVAR_DEFINE_AUTO( vr_weapon_pivot_pitch, "0", FCVAR_MOVEVARS, "Weapon pivot pitch" );
 CVAR_DEFINE_AUTO( vr_weapon_pivot_scale, "0", FCVAR_MOVEVARS, "Weapon pivot scale" );
@@ -1529,6 +1530,7 @@ void Host_VRInit( void )
 	Cvar_RegisterVariable( &vr_thumbstick_deadzone_right );
 	Cvar_RegisterVariable( &vr_thumbstick_snapturn );
 	Cvar_RegisterVariable( &vr_weapon_calibration_on );
+	Cvar_RegisterVariable( &vr_weapon_calibration_update );
 	Cvar_RegisterVariable( &vr_weapon_pivot_name );
 	Cvar_RegisterVariable( &vr_weapon_pivot_pitch );
 	Cvar_RegisterVariable( &vr_weapon_pivot_scale );
@@ -1924,7 +1926,7 @@ bool Host_VRWeaponCalibration( float thumbstickX, float thumbstickY )
 		// Write info on the screen
 		static char text[256];
 		int value = (int)Cvar_VariableValue(cvar);
-		sprintf(text, "%s = %d", cvar, value);
+		sprintf(text, "%s: %d", cvar, value);
 		CL_CenterPrint(text, 0.5f);
 
 		// Changing axis
@@ -1938,13 +1940,13 @@ bool Host_VRWeaponCalibration( float thumbstickX, float thumbstickY )
 		}
 		lastChangeAxisDown = changeAxisDown;
 
-
 		// Changing value
 		bool changeValueDown = fabs(thumbstickY) > deadzone;
 		static bool lastChangeValueDown = false;
 		if (changeValueDown && !lastChangeValueDown) {
 			value += thumbstickY > 0 ? 1 : -1;
 			Cvar_SetValue(cvar, (float)value);
+			Cvar_SetValue("vr_weapon_calibration_update", 1);
 		}
 		lastChangeValueDown = changeValueDown;
 		return true;
