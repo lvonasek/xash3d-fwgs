@@ -1603,9 +1603,10 @@ void Host_VRInput( void )
 			right.x = 0;
 			right.y = 0;
 		}
-		Host_VRButtonMapping(!rightHanded, lbuttons, rbuttons, left.x, left.y);
+		Host_VRButtonMapping(!rightHanded, lbuttons, rbuttons);
 		Host_VRWeaponCrosshair();
-		Host_VRMovement(zoomed, hmdAltitude, hmdAngles, hmdPosition, weaponAngles, weaponPosition);
+		Host_VRPlayerMovement(hmdAngles, hmdPosition, weaponAngles, left.x, left.y);
+		Host_VREntityMovement(zoomed, hmdAltitude, hmdAngles, hmdPosition, weaponPosition);
 		Host_VRRotations(zoomed, hmdAngles, hmdPosition, weaponAngles, right.x, right.y);
 	} else {
 		// Measure player when not in game mode
@@ -1615,7 +1616,7 @@ void Host_VRInput( void )
 		vr_hmd_resync = true;
 
 		// No game actions when UI is shown
-		Host_VRButtonMapping(!rightHanded, 0, 0, 0, 0);
+		Host_VRButtonMapping(!rightHanded, 0, 0);
 	}
 }
 
@@ -1657,7 +1658,7 @@ void Host_VRButtonMap( int button, int currentButtons, int lastButtons, const ch
 	}
 }
 
-void Host_VRButtonMapping( bool swapped, int lbuttons, int rbuttons, float thumbstickX, float thumbstickY )
+void Host_VRButtonMapping( bool swapped, int lbuttons, int rbuttons )
 {
 	int leftPrimaryButton = swapped ? ovrButton_A : ovrButton_X;
 	int leftSecondaryButton = swapped ? ovrButton_B : ovrButton_Y;
@@ -1678,12 +1679,6 @@ void Host_VRButtonMapping( bool swapped, int lbuttons, int rbuttons, float thumb
 	Host_VRButtonMap(ovrButton_Joystick, rbuttons, lastrbuttons, Cvar_VariableString("vr_button_joystick_right"));
 	Host_VRButtonMap(ovrButton_GripTrigger, rbuttons, lastrbuttons, Cvar_VariableString("vr_button_grip_right"));
 	lastrbuttons = rbuttons;
-
-	// Thumbstick movement
-	float deadzone = Cvar_VariableValue("vr_thumbstick_deadzone_left");
-	if (fabs(thumbstickX) < deadzone) thumbstickX = 0;
-	if (fabs(thumbstickY) < deadzone) thumbstickY = 0;
-	clgame.dllFuncs.pfnMoveEvent( thumbstickY, thumbstickX );
 }
 
 bool Host_VRConfig()
@@ -1817,40 +1812,22 @@ bool Host_VRMenuInput( bool cursorActive, bool gameMode, bool swapped, int lbutt
 	return pressedInUI;
 }
 
-void Host_VRMovement( bool zoomed, float hmdAltitude, vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponAngles, vec3_t weaponPosition )
+void Host_VREntityMovement( bool zoomed, float hmdAltitude, vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponPosition )
 {
-	float scale = Cvar_VariableValue("vr_worldscale");
-
-	// Recenter if player position changed way too much
-	vec3_t currentPosition;
-	static vec3_t lastPosition = {};
-	currentPosition[0] = Cvar_VariableValue("vr_player_pos_x");
-	currentPosition[1] = Cvar_VariableValue("vr_player_pos_y");
-	currentPosition[2] = Cvar_VariableValue("vr_player_pos_z");
-	if (vr_hmd_resync || VectorDistance(currentPosition, lastPosition) > scale) {
-		vr_hmd_offset[0] = -hmdPosition[0];
-		vr_hmd_offset[1] = -hmdPosition[2];
-		vr_hmd_resync = false;
-	}
-	VectorCopy(currentPosition, lastPosition);
-
-	// Reset offset if OS recenter was called
-	if (VR_DidRecenter()) {
-		vr_hmd_offset[0] = 0;
-		vr_hmd_offset[1] = 0;
-	}
-
-	// Camera movement
+	// Camera pushback
 	float limit = 1.0f;
-	float hmdYaw = DEG2RAD(hmdAngles[YAW]);
 	float dx = hmdPosition[0] + vr_hmd_offset[0];
 	float dy = hmdPosition[2] + vr_hmd_offset[1];
 	if (dx > limit) { vr_hmd_offset[0] += limit - dx; dx = limit; }
 	if (dx < -limit) { vr_hmd_offset[0] += -limit - dx; dx = -limit; }
 	if (dy > limit) { vr_hmd_offset[1] += limit - dy; dy = limit; }
 	if (dy < -limit) { vr_hmd_offset[1] += -limit - dy; dy = -limit; }
+
+	// Camera movement
+	float hmdYaw = DEG2RAD(hmdAngles[YAW]);
 	float camerax = dx * cos(hmdYaw) - dy * sin(hmdYaw);
 	float cameray = dx * sin(hmdYaw) + dy * cos(hmdYaw);
+	float scale = Cvar_VariableValue("vr_worldscale");
 	Cvar_SetValue("vr_camera_x", zoomed ? 0 : camerax * scale);
 	Cvar_SetValue("vr_camera_y", zoomed ? 0 : cameray * scale);
 	Cvar_SetValue("vr_camera_z", zoomed ? 0 : (hmdPosition[1] - hmdAltitude) * scale);
@@ -1863,6 +1840,58 @@ void Host_VRMovement( bool zoomed, float hmdAltitude, vec3_t hmdAngles, vec3_t h
 	Cvar_SetValue("vr_weapon_x", zoomed ? INT_MAX : weaponX * scale);
 	Cvar_SetValue("vr_weapon_y", zoomed ? INT_MAX : weaponY * scale);
 	Cvar_SetValue("vr_weapon_z", zoomed ? INT_MAX : (weaponPosition[1] - hmdAltitude) * scale);
+}
+
+void Host_VRPlayerMovement( vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponAngles, float thumbstickX, float thumbstickY )
+{
+	// Recenter if player position changed way too much
+	bool reset = false;
+	vec3_t currentPosition;
+	static vec3_t lastPosition = {};
+	float scale = Cvar_VariableValue("vr_worldscale");
+	currentPosition[0] = Cvar_VariableValue("vr_player_pos_x");
+	currentPosition[1] = Cvar_VariableValue("vr_player_pos_y");
+	currentPosition[2] = Cvar_VariableValue("vr_player_pos_z");
+	if (vr_hmd_resync || VectorDistance(currentPosition, lastPosition) > scale) {
+		vr_hmd_offset[0] = -hmdPosition[0];
+		vr_hmd_offset[1] = -hmdPosition[2];
+		vr_hmd_resync = false;
+		reset = true;
+	}
+	VectorCopy(currentPosition, lastPosition);
+
+	// Reset offset if OS recenter was called
+	if (VR_DidRecenter()) {
+		vr_hmd_offset[0] = 0;
+		vr_hmd_offset[1] = 0;
+		reset = true;
+	}
+
+	// Player movement
+	bool move6DoF = false;
+	static bool lastMove6Dof = false;
+	float hmdYaw = DEG2RAD(hmdAngles[YAW]);
+	float deadzone = Cvar_VariableValue("vr_thumbstick_deadzone_left");
+	if ((fabs(thumbstickX) < deadzone) && (fabs(thumbstickY) < deadzone)) {
+		thumbstickX = 0;
+		thumbstickY = 0;
+		if (Cvar_VariableValue("vr_6dof") > 0) {
+			if (lastMove6Dof && !reset) {
+				//TODO:update movement offset
+			}
+			float minimalMovement = 0.1f;
+			float yaw = hmdYaw - DEG2RAD(weaponAngles[YAW]);
+			float dx = Cvar_VariableValue("vr_camera_x") / scale;
+			float dy = -Cvar_VariableValue("vr_camera_y") / scale;
+			if (fabs(dx) + fabs(dy) > minimalMovement) {
+				thumbstickX = dx * cos(yaw) - dy * sin(yaw);
+				thumbstickY = dx * sin(yaw) + dy * cos(yaw);
+				move6DoF = true;
+			}
+		}
+	}
+	clgame.dllFuncs.pfnMoveEvent( thumbstickY, thumbstickX );
+	lastMove6Dof = move6DoF;
 }
 
 void Host_VRRotations( bool zoomed, vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponAngles, float thumbstickX, float thumbstickY )
