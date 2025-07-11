@@ -275,7 +275,7 @@ CVAR_DEFINE_AUTO( vr_xhair_y, "0", FCVAR_MOVEVARS, "Cross-hair 2d position y" );
 CVAR_DEFINE_AUTO( vr_zoomed, "0", FCVAR_MOVEVARS, "Flag if the scene zoomed" );
 
 
-CVAR_DEFINE_AUTO( vr_6dof, "0", FCVAR_ARCHIVE, "Use 6DoF world tracking" );
+CVAR_DEFINE_AUTO( vr_6dof, "1", FCVAR_ARCHIVE, "Use 6DoF world tracking" );
 CVAR_DEFINE_AUTO( vr_button_a, "+duck", FCVAR_ARCHIVE, "Controller mapping" );
 CVAR_DEFINE_AUTO( vr_button_b, "+jump", FCVAR_ARCHIVE, "Controller mapping" );
 CVAR_DEFINE_AUTO( vr_button_x, "drop", FCVAR_ARCHIVE, "Controller mapping" );
@@ -1858,7 +1858,6 @@ void Host_VRPlayerMovement( vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponA
 		vr_hmd_resync = false;
 		reset = true;
 	}
-	VectorCopy(currentPosition, lastPosition);
 
 	// Reset offset if OS recenter was called
 	if (VR_DidRecenter()) {
@@ -1876,21 +1875,32 @@ void Host_VRPlayerMovement( vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponA
 		thumbstickX = 0;
 		thumbstickY = 0;
 		if (Cvar_VariableValue("vr_6dof") > 0) {
+			float movementScale = 0.25f;  // How much should the movement be mapped to joystick
+			float minimalMovement = 0.1f; // Filter small movements to not spam the server
+
+			// Compensate movement from the previous frame
 			if (lastMove6Dof && !reset) {
-				//TODO:update movement offset
+				vec2_t hmdPos = {-hmdPosition[0], -hmdPosition[2]};
+				vec2_t playerDiff = {(currentPosition[0] - lastPosition[0]) / scale, (currentPosition[1] - lastPosition[1]) / scale};
+				float lerp = sqrt(powf(playerDiff[0], 2.0f) + powf(playerDiff[1], 2.0f));
+				Vector2Lerp(vr_hmd_offset, lerp > 1 ? 1 : lerp, hmdPos, vr_hmd_offset);
 			}
-			float minimalMovement = 0.1f;
+
+			// Send movement using joystick interface
 			float yaw = hmdYaw - DEG2RAD(weaponAngles[YAW]);
 			float dx = Cvar_VariableValue("vr_camera_x") / scale;
 			float dy = -Cvar_VariableValue("vr_camera_y") / scale;
 			if (fabs(dx) + fabs(dy) > minimalMovement) {
 				thumbstickX = dx * cos(yaw) - dy * sin(yaw);
 				thumbstickY = dx * sin(yaw) + dy * cos(yaw);
+				thumbstickX *= movementScale;
+				thumbstickY *= movementScale;
 				move6DoF = true;
 			}
 		}
 	}
 	clgame.dllFuncs.pfnMoveEvent( thumbstickY, thumbstickX );
+	VectorCopy(currentPosition, lastPosition);
 	lastMove6Dof = move6DoF;
 }
 
