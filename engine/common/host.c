@@ -1875,8 +1875,8 @@ void Host_VRPlayerMovement( vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponA
 		thumbstickX = 0;
 		thumbstickY = 0;
 		if (Cvar_VariableValue("vr_6dof") > 0) {
-			float movementScale = 0.25f;  // How much should the movement be mapped to joystick
-			float minimalMovement = 0.1f; // Filter small movements to not spam the server
+			float movementScale = 0.2f;   // How much should the movement be mapped to joystick
+			float minimalMovement = 0.3f; // Filter small movements to not spam the server
 
 			// Compensate movement from the previous frame
 			if (lastMove6Dof && !reset) {
