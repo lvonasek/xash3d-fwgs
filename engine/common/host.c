@@ -45,6 +45,7 @@ GNU General Public License for more details.
 #include "render_api.h"	// decallist_t
 #include "tests.h"
 #include <cl_tent.h>
+#include <platform/sdl/events.h>
 
 static pfnChangeGame	pChangeGame = NULL;
 host_parm_t		host;	// host parms
@@ -289,6 +290,8 @@ CVAR_DEFINE_AUTO( vr_button_trigger_right, "+attack", FCVAR_ARCHIVE, "Controller
 CVAR_DEFINE_AUTO( vr_thumbstick_deadzone_left, "0.15", FCVAR_ARCHIVE, "Deadzone of thumbstick to filter drift" );
 CVAR_DEFINE_AUTO( vr_thumbstick_deadzone_right, "0.8", FCVAR_ARCHIVE, "Deadzone of thumbstick to filter drift" );
 CVAR_DEFINE_AUTO( vr_thumbstick_snapturn, "45", FCVAR_ARCHIVE, "Angle to rotate by a thumbstick" );
+CVAR_DEFINE_AUTO( vr_msaa, "0", FCVAR_ARCHIVE, "Game rendering subpixel rendering" );
+CVAR_DEFINE_AUTO( vr_supersampling, "1.1", FCVAR_ARCHIVE, "Game rendering resolution" );
 CVAR_DEFINE_AUTO( vr_worldscale, "30", FCVAR_ARCHIVE, "Sets the world scale for stereo separation" );
 
 vec3_t vr_hmd_offset = {};
@@ -1515,6 +1518,7 @@ void Host_VRInit( void )
 	Cvar_RegisterVariable( &vr_hmd_pitch );
 	Cvar_RegisterVariable( &vr_hmd_yaw );
 	Cvar_RegisterVariable( &vr_hmd_roll );
+	Cvar_RegisterVariable( &vr_msaa );
 	Cvar_RegisterVariable( &vr_offset_x );
 	Cvar_RegisterVariable( &vr_offset_y );
 	Cvar_RegisterVariable( &vr_player_dir_x );
@@ -1542,6 +1546,7 @@ void Host_VRInit( void )
 	Cvar_RegisterVariable( &vr_weapon_x );
 	Cvar_RegisterVariable( &vr_weapon_y );
 	Cvar_RegisterVariable( &vr_weapon_z );
+	Cvar_RegisterVariable( &vr_supersampling );
 	Cvar_RegisterVariable( &vr_worldscale );
 	Cvar_RegisterVariable( &vr_xhair_x );
 	Cvar_RegisterVariable( &vr_xhair_y );
@@ -1682,8 +1687,24 @@ void Host_VRButtonMapping( bool swapped, int lbuttons, int rbuttons )
 
 bool Host_VRConfig()
 {
-	// Ensure VR compatible layout is used
+	// Update viewport if needed
+	static float lastMSAA = 1;
+	static float lastSupersampling = 1;
 	bool gameMode = Cvar_VariableValue("vr_gamemode") > 0.5f;
+	float currentMSAA = gameMode ? Cvar_VariableValue("vr_msaa") + 1.0f : 1.0f;
+	float currentSupersampling = gameMode ? Cvar_VariableValue("vr_supersampling") : 1.0f;
+	if ((fabs(lastMSAA - currentMSAA) > 0.01f) || (fabs(lastSupersampling - currentSupersampling) > 0.01f)) {
+		int width, height;
+		VR_SetConfig(VR_CONFIG_VIEWPORT_MSAA, currentMSAA);
+		VR_SetConfigFloat(VR_CONFIG_VIEWPORT_SUPERSAMPLING, currentSupersampling);
+		VR_InitRenderer(VR_GetEngine(), false);
+		VR_GetResolution(VR_GetEngine(), &width, &height);
+		VID_SaveWindowSize( width, height, true );
+		lastSupersampling = currentSupersampling;
+		lastMSAA = currentMSAA;
+	}
+
+	// Ensure VR compatible layout is used
 	Cvar_LazySet("con_fontscale", gameMode ? 1.5f : 1.0f);
 	Cvar_LazySet("hud_scale", 2);
 	Cvar_LazySet("touch_enable", 0);
