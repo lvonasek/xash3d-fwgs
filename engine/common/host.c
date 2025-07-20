@@ -289,7 +289,8 @@ CVAR_DEFINE_AUTO( vr_button_joystick_right, "+attack2", FCVAR_ARCHIVE, "Controll
 CVAR_DEFINE_AUTO( vr_button_trigger_right, "+attack", FCVAR_ARCHIVE, "Controller mapping" );
 CVAR_DEFINE_AUTO( vr_thumbstick_deadzone_left, "0.15", FCVAR_ARCHIVE, "Deadzone of thumbstick to filter drift" );
 CVAR_DEFINE_AUTO( vr_thumbstick_deadzone_right, "0.8", FCVAR_ARCHIVE, "Deadzone of thumbstick to filter drift" );
-CVAR_DEFINE_AUTO( vr_thumbstick_snapturn, "45", FCVAR_ARCHIVE, "Angle to rotate by a thumbstick" );
+CVAR_DEFINE_AUTO( vr_turn_angle, "45", FCVAR_ARCHIVE, "Angle to rotate by a thumbstick" );
+CVAR_DEFINE_AUTO( vr_turn_type, "0", FCVAR_ARCHIVE, "0 = snap turn, 1 = smooth turn" );
 CVAR_DEFINE_AUTO( vr_msaa, "0", FCVAR_ARCHIVE, "Game rendering subpixel rendering" );
 CVAR_DEFINE_AUTO( vr_refreshrate, "0", FCVAR_ARCHIVE, "1=force 90hz refresh rate" );
 CVAR_DEFINE_AUTO( vr_supersampling, "1.1", FCVAR_ARCHIVE, "Game rendering resolution" );
@@ -1534,7 +1535,8 @@ void Host_VRInit( void )
 	Cvar_RegisterVariable( &vr_stereo_side );
 	Cvar_RegisterVariable( &vr_thumbstick_deadzone_left );
 	Cvar_RegisterVariable( &vr_thumbstick_deadzone_right );
-	Cvar_RegisterVariable( &vr_thumbstick_snapturn );
+	Cvar_RegisterVariable( &vr_turn_angle );
+	Cvar_RegisterVariable( &vr_turn_type );
 	Cvar_RegisterVariable( &vr_weapon_calibration_on );
 	Cvar_RegisterVariable( &vr_weapon_calibration_update );
 	Cvar_RegisterVariable( &vr_weapon_pivot_name );
@@ -1953,10 +1955,14 @@ void Host_VRRotations( bool zoomed, vec3_t hmdAngles, vec3_t hmdPosition, vec3_t
 	// Snap turn
 	float snapTurnStep = 0;
 	float deadzone = Cvar_VariableValue("vr_thumbstick_deadzone_right");
+	bool smoothTurn = Cvar_VariableValue("vr_turn_type") > 0.5f;
 	bool snapTurnDown = fabs(thumbstickX) > deadzone;
 	static bool lastSnapTurnDown = false;
-	if (snapTurnDown && !lastSnapTurnDown) {
-		float angle = Cvar_VariableValue("vr_thumbstick_snapturn");
+	if (snapTurnDown && (smoothTurn || !lastSnapTurnDown)) {
+		float angle = Cvar_VariableValue("vr_turn_angle");
+		if (smoothTurn) {
+			angle *= 0.02f;
+		}
 		snapTurnStep = thumbstickX > 0 ? -angle : angle;
 		vr_hmd_offset[0] = -hmdPosition[0];
 		vr_hmd_offset[1] = -hmdPosition[2];
