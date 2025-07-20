@@ -60,8 +60,11 @@ void Android_Init( void )
 	if (strcmp(manufacturer, "PICO") == 0) {
 		VR_SetPlatformFLag(VR_PLATFORM_CONTROLLER_PICO, true);
 		VR_SetPlatformFLag(VR_PLATFORM_EXTENSION_INSTANCE, true);
+		VR_SetPlatformFLag(VR_PLATFORM_EXTENSION_REFRESH, true);
 	} else {
 		VR_SetPlatformFLag(VR_PLATFORM_CONTROLLER_QUEST, true);
+		VR_SetPlatformFLag(VR_PLATFORM_EXTENSION_PERFORMANCE, true);
+		VR_SetPlatformFLag(VR_PLATFORM_EXTENSION_REFRESH, true);
 		VR_SetPlatformFLag(VR_PLATFORM_VIEWPORT_UNCENTERED, true);
 	}
 	VR_SetPlatformFLag(VR_PLATFORM_VIEWPORT_SQUARE, true);
