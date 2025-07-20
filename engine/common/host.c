@@ -297,7 +297,6 @@ CVAR_DEFINE_AUTO( vr_supersampling, "1.1", FCVAR_ARCHIVE, "Game rendering resolu
 CVAR_DEFINE_AUTO( vr_worldscale, "30", FCVAR_ARCHIVE, "Sets the world scale for stereo separation" );
 
 vec3_t vr_hmd_offset = {};
-bool vr_hmd_resync = false;
 
 static void Sys_PrintBugcompUsage( const char *exename )
 {
@@ -1620,9 +1619,6 @@ void Host_VRInput( void )
 		// Measure player when not in game mode
 		vr_hmd_offset[2] = hmd.position.y;
 
-		// Reset 6DoF tracking
-		vr_hmd_resync = true;
-
 		// No game actions when UI is shown
 		Host_VRButtonMapping(!rightHanded, 0, 0);
 	}
@@ -1752,9 +1748,7 @@ void Host_VRCursor( bool cursorActive, float x, float y, vec2_t cursor )
 
 void Host_VRCustomCommand( char* action )
 {
-	if (strcmp(action, "vr_6dof_sync\n") == 0) {
-		vr_hmd_resync = true;
-	} else if (strcmp(action, "+vr_scoreboard\n") == 0) {
+	if (strcmp(action, "+vr_scoreboard\n") == 0) {
 		Cbuf_AddText( "showscoreboard2 0.213333 0.835556 0.213333 0.835556 0 0 0 128\n" );
 	} else if (strcmp(action, "-vr_scoreboard\n") == 0) {
 		Cbuf_AddText( "hidescoreboard2\n" );
@@ -1884,10 +1878,8 @@ void Host_VRPlayerMovement( vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponA
 	currentPosition[0] = Cvar_VariableValue("vr_player_pos_x");
 	currentPosition[1] = Cvar_VariableValue("vr_player_pos_y");
 	currentPosition[2] = Cvar_VariableValue("vr_player_pos_z");
-	if (vr_hmd_resync || VectorDistance(currentPosition, lastPosition) > scale) {
-		vr_hmd_offset[0] = -hmdPosition[0];
-		vr_hmd_offset[1] = -hmdPosition[2];
-		vr_hmd_resync = false;
+	if (VectorDistance(currentPosition, lastPosition) > scale) {
+		VR_Recenter(VR_GetEngine());
 		reset = true;
 	}
 
