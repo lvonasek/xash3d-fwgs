@@ -28,6 +28,7 @@ GNU General Public License for more details.
 #include <SDL.h>
 
 #include "VrBase.h"
+#include "VrRenderer.h"
 
 struct jnimethods_s
 {
@@ -68,6 +69,7 @@ void Android_Init( void )
 		VR_SetPlatformFLag(VR_PLATFORM_VIEWPORT_UNCENTERED, true);
 	}
 	VR_SetPlatformFLag(VR_PLATFORM_VIEWPORT_SQUARE, true);
+	VR_SetConfigFloat(VR_CONFIG_CANVAS_ASPECT, 4.0f / 3.0f);
 
 	//Init VR
 	ovrJava java;

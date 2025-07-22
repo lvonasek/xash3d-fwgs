@@ -862,7 +862,6 @@ void Host_Frame( double time )
 	}
 	if (!VR_GetConfig(VR_CONFIG_VIEWPORT_VALID)) {
 		VR_InitRenderer(engine, false);
-		VR_SetConfigFloat(VR_CONFIG_CANVAS_ASPECT, 1);
 		VR_SetConfigFloat(VR_CONFIG_CANVAS_DISTANCE, 5);
 		VR_SetConfig(VR_CONFIG_VIEWPORT_VALID, true);
 	}
@@ -1705,6 +1704,7 @@ bool Host_VRConfig()
 		int width, height;
 		VR_SetConfig(VR_CONFIG_VIEWPORT_MSAA, currentMSAA);
 		VR_SetConfigFloat(VR_CONFIG_VIEWPORT_SUPERSAMPLING, currentSupersampling);
+		VR_SetConfigFloat(VR_CONFIG_CANVAS_ASPECT, gameMode ? 1.0f : 4.0f / 3.0f);
 		VR_InitRenderer(VR_GetEngine(), false);
 		VR_GetResolution(VR_GetEngine(), &width, &height);
 		VID_SaveWindowSize( width, height, true );
