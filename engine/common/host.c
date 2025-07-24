@@ -1763,12 +1763,15 @@ bool Host_VRMenuInput( bool cursorActive, bool gameMode, bool swapped, int lbutt
 {
 	// Send enter when Keyboard released
 	static bool hadFocus = true;
+	static bool keyboardShown = false;
 	bool hasFocus = host.status != HOST_NOFOCUS;
-	if (!hadFocus && hasFocus) {
+	if (!hadFocus && hasFocus && keyboardShown) {
 		if( cls.key_dest == key_console )
 			Key_Console( K_ENTER );
 		else
 			Key_Message( K_ENTER );
+		keyboardShown = false;
+		SDL_StopTextInput();
 	}
 	hadFocus = hasFocus;
 
@@ -1806,6 +1809,7 @@ bool Host_VRMenuInput( bool cursorActive, bool gameMode, bool swapped, int lbutt
 		if (t == event_up && sdl_keyboard_requested) {
 			IN_TouchEvent(event_motion, 0, cursor[0], cursor[1], initialTouchX - cursor[0], initialTouchY - cursor[1]);
 			sdl_keyboard_requested = false;
+			keyboardShown = true;
 			SDL_StartTextInput();
 		}
 	}
