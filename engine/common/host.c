@@ -277,16 +277,27 @@ CVAR_DEFINE_AUTO( vr_zoomed, "0", FCVAR_MOVEVARS, "Flag if the scene zoomed" );
 
 
 CVAR_DEFINE_AUTO( vr_6dof, "1", FCVAR_ARCHIVE, "Use 6DoF world tracking" );
+CVAR_DEFINE_AUTO( vr_button_alt, "vr_button_x", FCVAR_ARCHIVE, "Button to active alternative mapping" );
 CVAR_DEFINE_AUTO( vr_button_a, "+duck", FCVAR_ARCHIVE, "Controller mapping" );
 CVAR_DEFINE_AUTO( vr_button_b, "+jump", FCVAR_ARCHIVE, "Controller mapping" );
 CVAR_DEFINE_AUTO( vr_button_x, "drop", FCVAR_ARCHIVE, "Controller mapping" );
-CVAR_DEFINE_AUTO( vr_button_y, "impulse 201;nightvision;+vr_scoreboard", FCVAR_ARCHIVE, "Controller mapping" );
+CVAR_DEFINE_AUTO( vr_button_y, "+vr_scoreboard", FCVAR_ARCHIVE, "Controller mapping" );
 CVAR_DEFINE_AUTO( vr_button_grip_left, "+voicerecord", FCVAR_ARCHIVE, "Controller mapping" );
 CVAR_DEFINE_AUTO( vr_button_joystick_left, "exec touch/cmd/cmd", FCVAR_ARCHIVE, "Controller mapping" );
 CVAR_DEFINE_AUTO( vr_button_trigger_left, "+use;buy", FCVAR_ARCHIVE, "Controller mapping" );
 CVAR_DEFINE_AUTO( vr_button_grip_right, "+reload", FCVAR_ARCHIVE, "Controller mapping" );
 CVAR_DEFINE_AUTO( vr_button_joystick_right, "+attack2", FCVAR_ARCHIVE, "Controller mapping" );
 CVAR_DEFINE_AUTO( vr_button_trigger_right, "+attack", FCVAR_ARCHIVE, "Controller mapping" );
+CVAR_DEFINE_AUTO( vr_button_a_alt, "", FCVAR_ARCHIVE, "Controller mapping" );
+CVAR_DEFINE_AUTO( vr_button_b_alt, "", FCVAR_ARCHIVE, "Controller mapping" );
+CVAR_DEFINE_AUTO( vr_button_x_alt, "", FCVAR_ARCHIVE, "Controller mapping" );
+CVAR_DEFINE_AUTO( vr_button_y_alt, "", FCVAR_ARCHIVE, "Controller mapping" );
+CVAR_DEFINE_AUTO( vr_button_grip_left_alt, "+voicerecord", FCVAR_ARCHIVE, "Controller mapping" );
+CVAR_DEFINE_AUTO( vr_button_joystick_left_alt, "", FCVAR_ARCHIVE, "Controller mapping" );
+CVAR_DEFINE_AUTO( vr_button_trigger_left_alt, "impulse 201", FCVAR_ARCHIVE, "Controller mapping" );
+CVAR_DEFINE_AUTO( vr_button_grip_right_alt, "nightvision;toggle_light", FCVAR_ARCHIVE, "Controller mapping" );
+CVAR_DEFINE_AUTO( vr_button_joystick_right_alt, "touch_hide say;touch_hide say2;messagemode", FCVAR_ARCHIVE, "Controller mapping" );
+CVAR_DEFINE_AUTO( vr_button_trigger_right_alt, "drop", FCVAR_ARCHIVE, "Controller mapping" );
 CVAR_DEFINE_AUTO( vr_thumbstick_deadzone_left, "0.15", FCVAR_ARCHIVE, "Deadzone of thumbstick to filter drift" );
 CVAR_DEFINE_AUTO( vr_thumbstick_deadzone_right, "0.8", FCVAR_ARCHIVE, "Deadzone of thumbstick to filter drift" );
 CVAR_DEFINE_AUTO( vr_turn_angle, "45", FCVAR_ARCHIVE, "Angle to rotate by a thumbstick" );
@@ -1554,6 +1565,7 @@ void Host_VRInit( void )
 	Cvar_RegisterVariable( &vr_xhair_y );
 
 	Cvar_RegisterVariable( &vr_6dof );
+	Cvar_RegisterVariable( &vr_button_alt );
 	Cvar_RegisterVariable( &vr_button_a );
 	Cvar_RegisterVariable( &vr_button_b );
 	Cvar_RegisterVariable( &vr_button_x );
@@ -1564,6 +1576,16 @@ void Host_VRInit( void )
 	Cvar_RegisterVariable( &vr_button_grip_right );
 	Cvar_RegisterVariable( &vr_button_joystick_right );
 	Cvar_RegisterVariable( &vr_button_trigger_right );
+	Cvar_RegisterVariable( &vr_button_a_alt );
+	Cvar_RegisterVariable( &vr_button_b_alt );
+	Cvar_RegisterVariable( &vr_button_x_alt );
+	Cvar_RegisterVariable( &vr_button_y_alt );
+	Cvar_RegisterVariable( &vr_button_grip_left_alt );
+	Cvar_RegisterVariable( &vr_button_joystick_left_alt );
+	Cvar_RegisterVariable( &vr_button_trigger_left_alt );
+	Cvar_RegisterVariable( &vr_button_grip_right_alt );
+	Cvar_RegisterVariable( &vr_button_joystick_right_alt );
+	Cvar_RegisterVariable( &vr_button_trigger_right_alt );
 	Cvar_RegisterVariable( &vr_zoomed );
 }
 
@@ -1623,7 +1645,7 @@ void Host_VRInput( void )
 	}
 }
 
-void Host_VRButtonMap( int button, int currentButtons, int lastButtons, const char* name )
+void Host_VRButtonMap( int button, int currentButtons, int lastButtons, const char* name, bool alt )
 {
 	// Detect if action should be called
 	bool down = currentButtons & button;
@@ -1640,8 +1662,10 @@ void Host_VRButtonMap( int button, int currentButtons, int lastButtons, const ch
 	// Process commands separated by a semicolon
 	if (process) {
 		int index = 0;
-		char command[256];
-		const char* action = Cvar_VariableString(name);
+		static char command[256];
+		static char fullname[64];
+		sprintf(fullname, "%s%s", name, alt ? "_alt" : "");
+		const char* action = Cvar_VariableString(fullname);
 		for (int i = 0; i <= strlen(action); i++) {
 			if ((action[i] == ';') || (action[i] == '\000')) {
 				command[index++] = '\n';
@@ -1669,19 +1693,32 @@ void Host_VRButtonMapping( bool swapped, int lbuttons, int rbuttons )
 	int rightPrimaryButton = !swapped ? ovrButton_A : ovrButton_X;
 	int rightSecondaryButton = !swapped ? ovrButton_B : ovrButton_Y;
 
+	bool alt = false;
+	const char* altButton = Cvar_VariableString("vr_button_alt");
+	if ((strcmp(altButton, "vr_button_x") == 0) && (lbuttons & leftPrimaryButton)) alt = true;
+	else if ((strcmp(altButton, "vr_button_y") == 0) && (lbuttons & leftSecondaryButton)) alt = true;
+	else if ((strcmp(altButton, "vr_button_trigger_left") == 0) && (lbuttons & ovrButton_Trigger)) alt = true;
+	else if ((strcmp(altButton, "vr_button_joystick_left") == 0) && (lbuttons & ovrButton_Joystick)) alt = true;
+	else if ((strcmp(altButton, "vr_button_grip_left") == 0) && (lbuttons & ovrButton_GripTrigger)) alt = true;
+	else if ((strcmp(altButton, "vr_button_a") == 0) && (rbuttons & rightPrimaryButton)) alt = true;
+	else if ((strcmp(altButton, "vr_button_b") == 0) && (rbuttons & rightSecondaryButton)) alt = true;
+	else if ((strcmp(altButton, "vr_button_trigger_right") == 0) && (rbuttons & ovrButton_Trigger)) alt = true;
+	else if ((strcmp(altButton, "vr_button_joystick_right") == 0) && (rbuttons & ovrButton_Joystick)) alt = true;
+	else if ((strcmp(altButton, "vr_button_grip_right") == 0) && (rbuttons & ovrButton_GripTrigger)) alt = true;
+
 	static int lastlbuttons = 0;
-	Host_VRButtonMap(leftPrimaryButton, lbuttons, lastlbuttons, "vr_button_x");
-	Host_VRButtonMap(leftSecondaryButton, lbuttons, lastlbuttons, "vr_button_y");
-	Host_VRButtonMap(ovrButton_Trigger, lbuttons, lastlbuttons, "vr_button_trigger_left");
-	Host_VRButtonMap(ovrButton_Joystick, lbuttons, lastlbuttons, "vr_button_joystick_left");
-	Host_VRButtonMap(ovrButton_GripTrigger, lbuttons, lastlbuttons, "vr_button_grip_left");
+	Host_VRButtonMap(leftPrimaryButton, lbuttons, lastlbuttons, "vr_button_x", alt);
+	Host_VRButtonMap(leftSecondaryButton, lbuttons, lastlbuttons, "vr_button_y", alt);
+	Host_VRButtonMap(ovrButton_Trigger, lbuttons, lastlbuttons, "vr_button_trigger_left", alt);
+	Host_VRButtonMap(ovrButton_Joystick, lbuttons, lastlbuttons, "vr_button_joystick_left", alt);
+	Host_VRButtonMap(ovrButton_GripTrigger, lbuttons, lastlbuttons, "vr_button_grip_left", alt);
 	lastlbuttons = lbuttons;
 	static int lastrbuttons = 0;
-	Host_VRButtonMap(rightPrimaryButton, rbuttons, lastrbuttons, "vr_button_a");
-	Host_VRButtonMap(rightSecondaryButton, rbuttons, lastrbuttons, "vr_button_b");
-	Host_VRButtonMap(ovrButton_Trigger, rbuttons, lastrbuttons, "vr_button_trigger_right");
-	Host_VRButtonMap(ovrButton_Joystick, rbuttons, lastrbuttons, "vr_button_joystick_right");
-	Host_VRButtonMap(ovrButton_GripTrigger, rbuttons, lastrbuttons, "vr_button_grip_right");
+	Host_VRButtonMap(rightPrimaryButton, rbuttons, lastrbuttons, "vr_button_a", alt);
+	Host_VRButtonMap(rightSecondaryButton, rbuttons, lastrbuttons, "vr_button_b", alt);
+	Host_VRButtonMap(ovrButton_Trigger, rbuttons, lastrbuttons, "vr_button_trigger_right", alt);
+	Host_VRButtonMap(ovrButton_Joystick, rbuttons, lastrbuttons, "vr_button_joystick_right", alt);
+	Host_VRButtonMap(ovrButton_GripTrigger, rbuttons, lastrbuttons, "vr_button_grip_right", alt);
 	lastrbuttons = rbuttons;
 }
 
