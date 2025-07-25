@@ -1623,7 +1623,7 @@ void Host_VRInput( void )
 	}
 }
 
-void Host_VRButtonMap( int button, int currentButtons, int lastButtons, const char* action )
+void Host_VRButtonMap( int button, int currentButtons, int lastButtons, const char* name )
 {
 	// Detect if action should be called
 	bool down = currentButtons & button;
@@ -1641,6 +1641,7 @@ void Host_VRButtonMap( int button, int currentButtons, int lastButtons, const ch
 	if (process) {
 		int index = 0;
 		char command[256];
+		const char* action = Cvar_VariableString(name);
 		for (int i = 0; i <= strlen(action); i++) {
 			if ((action[i] == ';') || (action[i] == '\000')) {
 				command[index++] = '\n';
@@ -1669,18 +1670,18 @@ void Host_VRButtonMapping( bool swapped, int lbuttons, int rbuttons )
 	int rightSecondaryButton = !swapped ? ovrButton_B : ovrButton_Y;
 
 	static int lastlbuttons = 0;
-	Host_VRButtonMap(leftPrimaryButton, lbuttons, lastlbuttons, Cvar_VariableString("vr_button_x"));
-	Host_VRButtonMap(leftSecondaryButton, lbuttons, lastlbuttons, Cvar_VariableString("vr_button_y"));
-	Host_VRButtonMap(ovrButton_Trigger, lbuttons, lastlbuttons, Cvar_VariableString("vr_button_trigger_left"));
-	Host_VRButtonMap(ovrButton_Joystick, lbuttons, lastlbuttons, Cvar_VariableString("vr_button_joystick_left"));
-	Host_VRButtonMap(ovrButton_GripTrigger, lbuttons, lastlbuttons, Cvar_VariableString("vr_button_grip_left"));
+	Host_VRButtonMap(leftPrimaryButton, lbuttons, lastlbuttons, "vr_button_x");
+	Host_VRButtonMap(leftSecondaryButton, lbuttons, lastlbuttons, "vr_button_y");
+	Host_VRButtonMap(ovrButton_Trigger, lbuttons, lastlbuttons, "vr_button_trigger_left");
+	Host_VRButtonMap(ovrButton_Joystick, lbuttons, lastlbuttons, "vr_button_joystick_left");
+	Host_VRButtonMap(ovrButton_GripTrigger, lbuttons, lastlbuttons, "vr_button_grip_left");
 	lastlbuttons = lbuttons;
 	static int lastrbuttons = 0;
-	Host_VRButtonMap(rightPrimaryButton, rbuttons, lastrbuttons, Cvar_VariableString("vr_button_a"));
-	Host_VRButtonMap(rightSecondaryButton, rbuttons, lastrbuttons, Cvar_VariableString("vr_button_b"));
-	Host_VRButtonMap(ovrButton_Trigger, rbuttons, lastrbuttons, Cvar_VariableString("vr_button_trigger_right"));
-	Host_VRButtonMap(ovrButton_Joystick, rbuttons, lastrbuttons, Cvar_VariableString("vr_button_joystick_right"));
-	Host_VRButtonMap(ovrButton_GripTrigger, rbuttons, lastrbuttons, Cvar_VariableString("vr_button_grip_right"));
+	Host_VRButtonMap(rightPrimaryButton, rbuttons, lastrbuttons, "vr_button_a");
+	Host_VRButtonMap(rightSecondaryButton, rbuttons, lastrbuttons, "vr_button_b");
+	Host_VRButtonMap(ovrButton_Trigger, rbuttons, lastrbuttons, "vr_button_trigger_right");
+	Host_VRButtonMap(ovrButton_Joystick, rbuttons, lastrbuttons, "vr_button_joystick_right");
+	Host_VRButtonMap(ovrButton_GripTrigger, rbuttons, lastrbuttons, "vr_button_grip_right");
 	lastrbuttons = rbuttons;
 }
 
