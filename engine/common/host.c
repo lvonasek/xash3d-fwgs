@@ -304,6 +304,7 @@ CVAR_DEFINE_AUTO( vr_turn_angle, "45", FCVAR_ARCHIVE, "Angle to rotate by a thum
 CVAR_DEFINE_AUTO( vr_turn_type, "0", FCVAR_ARCHIVE, "0 = snap turn, 1 = smooth turn" );
 CVAR_DEFINE_AUTO( vr_msaa, "0", FCVAR_ARCHIVE, "Game rendering subpixel rendering" );
 CVAR_DEFINE_AUTO( vr_refreshrate, "0", FCVAR_ARCHIVE, "1=force 90hz refresh rate" );
+CVAR_DEFINE_AUTO( vr_righthand, "1", FCVAR_ARCHIVE, "Use right hand mapping" );
 CVAR_DEFINE_AUTO( vr_supersampling, "1.1", FCVAR_ARCHIVE, "Game rendering resolution" );
 CVAR_DEFINE_AUTO( vr_worldscale, "30", FCVAR_ARCHIVE, "Sets the world scale for stereo separation" );
 
@@ -1541,6 +1542,7 @@ void Host_VRInit( void )
 	Cvar_RegisterVariable( &vr_player_pitch );
 	Cvar_RegisterVariable( &vr_player_yaw );
 	Cvar_RegisterVariable( &vr_refreshrate );
+	Cvar_RegisterVariable( &vr_righthand );
 	Cvar_RegisterVariable( &vr_stereo_side );
 	Cvar_RegisterVariable( &vr_thumbstick_deadzone_left );
 	Cvar_RegisterVariable( &vr_thumbstick_deadzone_right );
@@ -1749,6 +1751,9 @@ bool Host_VRConfig()
 		lastSupersampling = currentSupersampling;
 		lastMSAA = currentMSAA;
 	}
+
+	// Use separate right hand CVAR to not let servers overwrite it
+	Cvar_LazySet("cl_righthand", Cvar_VariableValue("vr_righthand"));
 
 	// Ensure VR compatible layout is used
 	Cvar_LazySet("con_fontscale", gameMode ? 1.5f : 1.0f);
