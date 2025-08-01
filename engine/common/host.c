@@ -271,6 +271,7 @@ CVAR_DEFINE_AUTO( vr_weapon_roll, "0", FCVAR_MOVEVARS, "Weapon roll angle" );
 CVAR_DEFINE_AUTO( vr_weapon_x, "0", FCVAR_MOVEVARS, "Weapon position x" );
 CVAR_DEFINE_AUTO( vr_weapon_y, "0", FCVAR_MOVEVARS, "Weapon position y" );
 CVAR_DEFINE_AUTO( vr_weapon_z, "0", FCVAR_MOVEVARS, "Weapon position z" );
+CVAR_DEFINE_AUTO( vr_xhair, "1", FCVAR_MOVEVARS, "Cross-hair rendering" );
 CVAR_DEFINE_AUTO( vr_xhair_x, "0", FCVAR_MOVEVARS, "Cross-hair 2d position x" );
 CVAR_DEFINE_AUTO( vr_xhair_y, "0", FCVAR_MOVEVARS, "Cross-hair 2d position y" );
 CVAR_DEFINE_AUTO( vr_zoomed, "0", FCVAR_MOVEVARS, "Flag if the scene zoomed" );
@@ -1563,6 +1564,7 @@ void Host_VRInit( void )
 	Cvar_RegisterVariable( &vr_weapon_z );
 	Cvar_RegisterVariable( &vr_supersampling );
 	Cvar_RegisterVariable( &vr_worldscale );
+	Cvar_RegisterVariable( &vr_xhair );
 	Cvar_RegisterVariable( &vr_xhair_x );
 	Cvar_RegisterVariable( &vr_xhair_y );
 
