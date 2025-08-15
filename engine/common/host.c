@@ -2192,7 +2192,10 @@ void Host_VRWeaponCrosshair()
 	// Decide if crosshair should be visible
 	bool visible = true;
 	const char* weapon = Cvar_VariableString("vr_weapon_pivot_name");
-	if ((strcmp(weapon, "models/v_knife.mdl") == 0)) {
+	if ((strcmp(weapon, "models/v_knife.mdl") == 0) ||
+		(strcmp(weapon, "models/v_flashbang.mdl") == 0) ||
+		(strcmp(weapon, "models/v_hegrenade.mdl") == 0) ||
+		(strcmp(weapon, "models/v_smokegrenade.mdl") == 0)) {
 		visible = false;
 	}
 
