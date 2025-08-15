@@ -1962,12 +1962,29 @@ void Host_VRMotionControls( vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponP
 			Cbuf_AddText( slowAttack ? "+attack\n" : "-attack\n" );
 			lastSlowAttack = slowAttack;
 		}
-		if (!fastAttack && !slowAttack) {
-			Cvar_SetValue("vr_weapon_anim", 1);
+		if (fastAttack || slowAttack) {
+			Cvar_LazySet("vr_weapon_anim", 0);
+		} else {
+			Cvar_LazySet("vr_weapon_anim", 1);
 			attackStarted = false;
 		}
+	}
+	//Grenade throwing
+	else if ((strcmp(weapon, "models/v_flashbang.mdl") == 0) ||
+		(strcmp(weapon, "models/v_hegrenade.mdl") == 0) ||
+		(strcmp(weapon, "models/v_smokegrenade.mdl") == 0)) {
+
+		static bool lastThrowing = false;
+		bool throwing = (forward > 0.3f) && (speed > 0.0002f);
+		if (throwing != lastThrowing) {
+			Cbuf_AddText( throwing ? "+attack\n" : "-attack\n" );
+			if (!throwing) {
+				Cvar_LazySet("vr_weapon_anim", 0);
+			}
+			lastThrowing = throwing;
+		}
 	} else {
-		Cvar_SetValue("vr_weapon_anim", 1);
+		Cvar_LazySet("vr_weapon_anim", 1);
 	}
 
 	//Remember last status
