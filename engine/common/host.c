@@ -258,6 +258,7 @@ CVAR_DEFINE_AUTO( vr_player_pos_z, "0", FCVAR_MOVEVARS, "Position z of the playe
 CVAR_DEFINE_AUTO( vr_player_pitch, "0", FCVAR_MOVEVARS, "Pinch angle of the player" );
 CVAR_DEFINE_AUTO( vr_player_yaw, "0", FCVAR_MOVEVARS, "Yaw angle of the player" );
 CVAR_DEFINE_AUTO( vr_stereo_side, "0", FCVAR_MOVEVARS, "Eye being drawn" );
+CVAR_DEFINE_AUTO( vr_weapon_anim, "1", FCVAR_MOVEVARS, "Disabling animations for motion controls" );
 CVAR_DEFINE_AUTO( vr_weapon_calibration_on, "0", FCVAR_MOVEVARS, "Tool to calibrate weapons" );
 CVAR_DEFINE_AUTO( vr_weapon_calibration_update, "0", FCVAR_MOVEVARS, "Information to update calibration" );
 CVAR_DEFINE_AUTO( vr_weapon_pivot_name, "", FCVAR_MOVEVARS, "Current weapon name" );
@@ -1558,6 +1559,7 @@ void Host_VRInit( void )
 	Cvar_RegisterVariable( &vr_thumbstick_deadzone_right );
 	Cvar_RegisterVariable( &vr_turn_angle );
 	Cvar_RegisterVariable( &vr_turn_type );
+	Cvar_RegisterVariable( &vr_weapon_anim );
 	Cvar_RegisterVariable( &vr_weapon_calibration_on );
 	Cvar_RegisterVariable( &vr_weapon_calibration_update );
 	Cvar_RegisterVariable( &vr_weapon_pivot_name );
@@ -1657,8 +1659,9 @@ void Host_VRInput( void )
 			right.y = vr_input[1];
 		}
 		Host_VRWeaponCrosshair();
-		Host_VRPlayerMovement(hmdAngles, hmdPosition, weaponAngles, left.x, left.y);
-		Host_VREntityMovement(zoomed, hmdAngles, hmdPosition, weaponPosition);
+		Host_VRMotionControls(hmdAngles, hmdPosition, weaponPosition);
+		Host_VRMovementPlayer(hmdAngles, hmdPosition, weaponAngles, left.x, left.y);
+		Host_VRMovementEntity(zoomed, hmdAngles, hmdPosition, weaponPosition);
 		Host_VRRotations(zoomed, hmdAngles, hmdPosition, weaponAngles, right.x, right.y);
 	} else {
 		// Measure player when not in game mode
@@ -1926,7 +1929,53 @@ bool Host_VRMenuInput( bool cursorActive, bool gameMode, bool swapped, int lbutt
 	return pressedInUI;
 }
 
-void Host_VREntityMovement( bool zoomed, vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponPosition )
+void Host_VRMotionControls( vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponPosition)
+{
+	// Get information
+	static float lastSpeed = 0;
+	static float lastForward = 0;
+	float hmdYaw = DEG2RAD(hmdAngles[YAW]);
+	float dx = hmdPosition[0] - weaponPosition[0];
+	float dy = hmdPosition[2] - weaponPosition[2];
+	float forward = dx * sin(hmdYaw) + dy * cos(hmdYaw);
+	float speed = fabs(lastForward - forward) / (float)VR_GetRefreshRate();
+	const char* weapon = Cvar_VariableString("vr_weapon_pivot_name");
+
+	//Knife attack
+	if ((strcmp(weapon, "models/v_knife.mdl") == 0)) {
+		static bool attackStarted = false;
+		static bool lastFastAttack = false;
+		static bool lastSlowAttack = false;
+		if (lastSpeed > speed) {
+			attackStarted = true;
+		}
+		bool fastAttack = attackStarted && (forward > 0.3f) && (speed > 0.0002f);
+		bool slowAttack = attackStarted && (forward > 0.3f) && (speed > 0.0001f) && !fastAttack;
+
+		if (fastAttack != lastFastAttack) {
+			Cvar_SetValue("vr_weapon_anim", 0);
+			Cbuf_AddText( fastAttack ? "+attack2\n" : "-attack2\n" );
+			lastFastAttack = fastAttack;
+		}
+		if (slowAttack != lastSlowAttack) {
+			Cvar_SetValue("vr_weapon_anim", 0);
+			Cbuf_AddText( slowAttack ? "+attack\n" : "-attack\n" );
+			lastSlowAttack = slowAttack;
+		}
+		if (!fastAttack && !slowAttack) {
+			Cvar_SetValue("vr_weapon_anim", 1);
+			attackStarted = false;
+		}
+	} else {
+		Cvar_SetValue("vr_weapon_anim", 1);
+	}
+
+	//Remember last status
+	lastForward = forward;
+	lastSpeed = speed;
+}
+
+void Host_VRMovementEntity( bool zoomed, vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponPosition )
 {
 	// Camera pushback
 	float limit = 1.0f;
@@ -1956,7 +2005,7 @@ void Host_VREntityMovement( bool zoomed, vec3_t hmdAngles, vec3_t hmdPosition, v
 	Cvar_SetValue("vr_weapon_z", zoomed ? INT_MAX : (weaponPosition[1] - vr_hmd_offset[2]) * scale);
 }
 
-void Host_VRPlayerMovement( vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponAngles, float thumbstickX, float thumbstickY )
+void Host_VRMovementPlayer( vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponAngles, float thumbstickX, float thumbstickY )
 {
 	// Recenter if player position changed way too much
 	bool reset = false;
