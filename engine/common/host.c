@@ -2189,9 +2189,16 @@ void Host_VRWeaponCrosshair()
 		}
 	}
 
+	// Decide if crosshair should be visible
+	bool visible = true;
+	const char* weapon = Cvar_VariableString("vr_weapon_pivot_name");
+	if ((strcmp(weapon, "models/v_knife.mdl") == 0)) {
+		visible = false;
+	}
+
 	// Convert the position into screen coordinates
 	vec3_t screenPos;
 	TriWorldToScreen(vecEnd, screenPos);
-	Cvar_SetValue("vr_xhair_x", screenPos[0]);
-	Cvar_SetValue("vr_xhair_y", screenPos[1]);
+	Cvar_SetValue("vr_xhair_x", visible ? screenPos[0] : INT_MAX);
+	Cvar_SetValue("vr_xhair_y", visible ? screenPos[1] : INT_MAX);
 }
