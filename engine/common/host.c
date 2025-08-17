@@ -269,6 +269,9 @@ CVAR_DEFINE_AUTO( vr_weapon_pivot_x, "0", FCVAR_MOVEVARS, "Weapon pivot position
 CVAR_DEFINE_AUTO( vr_weapon_pivot_y, "0", FCVAR_MOVEVARS, "Weapon pivot position y" );
 CVAR_DEFINE_AUTO( vr_weapon_pivot_z, "0", FCVAR_MOVEVARS, "Weapon pivot position z" );
 CVAR_DEFINE_AUTO( vr_weapon_roll, "0", FCVAR_MOVEVARS, "Weapon roll angle" );
+CVAR_DEFINE_AUTO( vr_weapon_throw_active, "0", FCVAR_MOVEVARS, "Throwing grenade active" );
+CVAR_DEFINE_AUTO( vr_weapon_throw_pitch, "0", FCVAR_MOVEVARS, "Throwing grenade pitch angle" );
+CVAR_DEFINE_AUTO( vr_weapon_throw_yaw, "0", FCVAR_MOVEVARS, "Throwing grenade yaw angle" );
 CVAR_DEFINE_AUTO( vr_weapon_x, "0", FCVAR_MOVEVARS, "Weapon position x" );
 CVAR_DEFINE_AUTO( vr_weapon_y, "0", FCVAR_MOVEVARS, "Weapon position y" );
 CVAR_DEFINE_AUTO( vr_weapon_z, "0", FCVAR_MOVEVARS, "Weapon position z" );
@@ -1570,6 +1573,9 @@ void Host_VRInit( void )
 	Cvar_RegisterVariable( &vr_weapon_pivot_y );
 	Cvar_RegisterVariable( &vr_weapon_pivot_z );
 	Cvar_RegisterVariable( &vr_weapon_roll );
+	Cvar_RegisterVariable( &vr_weapon_throw_active );
+	Cvar_RegisterVariable( &vr_weapon_throw_pitch );
+	Cvar_RegisterVariable( &vr_weapon_throw_yaw );
 	Cvar_RegisterVariable( &vr_weapon_x );
 	Cvar_RegisterVariable( &vr_weapon_y );
 	Cvar_RegisterVariable( &vr_weapon_z );
@@ -1635,6 +1641,13 @@ void Host_VRInput( void )
 	vec3_t weaponAngles = {euler.x, euler.y, euler.z};
 	vec3_t weaponPosition = {pose.position.x, pose.position.y, pose.position.z};
 	vec3_t hmdPosition = {hmd.position.x, hmd.position.y, hmd.position.z};
+
+	// Change weapon angles if throwing a grenade
+	if (Cvar_VariableValue("vr_weapon_throw_active") > 0.5f) {
+		weaponAngles[PITCH] = RAD2DEG(Cvar_VariableValue("vr_weapon_throw_pitch"));
+		weaponAngles[YAW] = RAD2DEG(Cvar_VariableValue("vr_weapon_throw_yaw"));
+		weaponAngles[ROLL] = 0;
+	}
 
 	// Menu control
 	vec2_t cursor = {};
@@ -1937,6 +1950,7 @@ void Host_VRMotionControls( vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponP
 	float hmdYaw = DEG2RAD(hmdAngles[YAW]);
 	float dx = hmdPosition[0] - weaponPosition[0];
 	float dy = hmdPosition[2] - weaponPosition[2];
+	float dz = hmdPosition[1] - weaponPosition[1];
 	float forward = dx * sin(hmdYaw) + dy * cos(hmdYaw);
 	float speed = fabs(lastForward - forward) / (float)VR_GetRefreshRate();
 	const char* weapon = Cvar_VariableString("vr_weapon_pivot_name");
@@ -1968,14 +1982,33 @@ void Host_VRMotionControls( vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponP
 			Cvar_LazySet("vr_weapon_anim", 1);
 			attackStarted = false;
 		}
+		Cvar_LazySet("vr_weapon_throw_active", 0);
 	}
 	//Grenade throwing
 	else if ((strcmp(weapon, "models/v_flashbang.mdl") == 0) ||
 		(strcmp(weapon, "models/v_hegrenade.mdl") == 0) ||
 		(strcmp(weapon, "models/v_smokegrenade.mdl") == 0)) {
 
+		static float startDX = 0;
+		static float startDY = 0;
+		static float startDZ = 0;
+		float dirX = dx - startDX;
+		float dirY = dy - startDY;
+		float dirZ = dz - startDZ;
+
 		static bool lastThrowing = false;
-		bool throwing = (forward > 0.3f) && (speed > 0.0002f);
+		bool throwing = speed > 0.0002f;
+		if (throwing) {
+			float dir = sqrt(dirX * dirX + dirY * dirY);
+			Cvar_LazySet("vr_weapon_throw_active", 1);
+			Cvar_SetValue("vr_weapon_throw_pitch", sin(dirZ / dir));
+			Cvar_SetValue("vr_weapon_throw_yaw", atan2(dirX, dirY));
+		} else if (speed < 0.0001f) {
+			Cvar_LazySet("vr_weapon_throw_active", 0);
+			startDX = dx;
+			startDY = dy;
+			startDZ = dz;
+		}
 		if (throwing != lastThrowing) {
 			Cbuf_AddText( throwing ? "+attack\n" : "-attack\n" );
 			if (!throwing) {
@@ -1985,6 +2018,7 @@ void Host_VRMotionControls( vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponP
 		}
 	} else {
 		Cvar_LazySet("vr_weapon_anim", 1);
+		Cvar_LazySet("vr_weapon_throw_active", 0);
 	}
 
 	//Remember last status
