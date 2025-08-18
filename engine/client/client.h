@@ -186,7 +186,7 @@ typedef struct
 	int		maxclients;
 
 	int		nummodels;
-	model_t		*models[MAX_MODELS+1];		// precached models (plus sentinel slot)
+	model_t		*models[MAX_MODELS+2];		// precached models (plus sentinel and VR hand slot)
 
 	qboolean	paused;
 
