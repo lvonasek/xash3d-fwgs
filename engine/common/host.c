@@ -264,6 +264,7 @@ CVAR_DEFINE_AUTO( vr_player_pos_y, "0", FCVAR_MOVEVARS, "Position y of the playe
 CVAR_DEFINE_AUTO( vr_player_pos_z, "0", FCVAR_MOVEVARS, "Position z of the player" );
 CVAR_DEFINE_AUTO( vr_player_pitch, "0", FCVAR_MOVEVARS, "Pinch angle of the player" );
 CVAR_DEFINE_AUTO( vr_player_yaw, "0", FCVAR_MOVEVARS, "Yaw angle of the player" );
+CVAR_DEFINE_AUTO( vr_shielded, "0", FCVAR_MOVEVARS, "Player is covered by shield" );
 CVAR_DEFINE_AUTO( vr_stereo_side, "0", FCVAR_MOVEVARS, "Eye being drawn" );
 CVAR_DEFINE_AUTO( vr_weapon_anim, "1", FCVAR_MOVEVARS, "Disabling animations for motion controls" );
 CVAR_DEFINE_AUTO( vr_weapon_calibration_on, "0", FCVAR_MOVEVARS, "Tool to calibrate weapons" );
@@ -1571,6 +1572,7 @@ void Host_VRInit( void )
 	Cvar_RegisterVariable( &vr_player_yaw );
 	Cvar_RegisterVariable( &vr_refreshrate );
 	Cvar_RegisterVariable( &vr_righthand );
+	Cvar_RegisterVariable( &vr_shielded );
 	Cvar_RegisterVariable( &vr_stereo_side );
 	Cvar_RegisterVariable( &vr_thumbstick_deadzone_left );
 	Cvar_RegisterVariable( &vr_thumbstick_deadzone_right );
@@ -1659,6 +1661,12 @@ void Host_VRInput( void )
 	vec3_t weaponPosition = {weapon.position.x, weapon.position.y, weapon.position.z};
 	vec3_t handPosition = {hand.position.x, hand.position.y, hand.position.z};
 	vec3_t hmdPosition = {hmd.position.x, hmd.position.y, hmd.position.z};
+
+	if (Cvar_VariableValue("vr_shielded") > 0) {
+		weaponAngles[PITCH] = handAngles[PITCH];
+		weaponAngles[YAW] = handAngles[YAW];
+		weaponAngles[ROLL] = handAngles[ROLL];
+	}
 
 	// Two hand weapons and hand pointer
 	if (Cvar_VariableValue("vr_hand_active") > 0) {
@@ -1988,12 +1996,14 @@ void Host_VRMotionControls( vec3_t hmdAngles, vec3_t handPosition, vec3_t hmdPos
 
 	//Hand use action
 	static bool lastUse = false;
-	bool use = forwardHand > 0.6f;
+	static const char* prefixShield = "models/shield/v_";
+	bool hasShield = strncmp(weapon, prefixShield, strlen(prefixShield)) == 0;
+	bool use = (forwardHand > 0.65f) && !hasShield;
 	if (lastUse != use) {
 		Cbuf_AddText( use ? "+use\n" : "-use\n" );
 		lastUse = use;
 	}
-	Cvar_SetValue("vr_hand_active", forwardHand > 0.5f ? 1 : 0);
+	Cvar_SetValue("vr_hand_active", (forwardHand > 0.6f) && !hasShield ? 1 : 0);
 
 	//Knife attack
 	if ((strcmp(weapon, "models/v_knife.mdl") == 0)) {
