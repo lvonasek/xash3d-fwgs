@@ -874,7 +874,7 @@ static inline cl_entity_t *CL_GetEntityByIndex( int index )
 
 static inline model_t *CL_ModelHandle( int modelindex )
 {
-	return modelindex >= 0 && modelindex < MAX_MODELS ? cl.models[modelindex] : NULL;
+	return modelindex >= 0 && modelindex < MAX_MODELS + 2 ? cl.models[modelindex] : NULL;
 }
 
 static inline qboolean CL_IsThirdPerson( void )

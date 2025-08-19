@@ -244,6 +244,13 @@ CVAR_DEFINE_AUTO( vr_camera_x, "0", FCVAR_MOVEVARS, "Offset x of the camera" );
 CVAR_DEFINE_AUTO( vr_camera_y, "0", FCVAR_MOVEVARS, "Offset y of the camera" );
 CVAR_DEFINE_AUTO( vr_camera_z, "0", FCVAR_MOVEVARS, "Offset z of the camera" );
 CVAR_DEFINE_AUTO( vr_gamemode, "0", FCVAR_MOVEVARS, "Are we in the 3D VR mode?" );
+CVAR_DEFINE_AUTO( vr_hand_active, "0", FCVAR_MOVEVARS, "Hand aiming active" );
+CVAR_DEFINE_AUTO( vr_hand_x, "0", FCVAR_MOVEVARS, "Hand position x" );
+CVAR_DEFINE_AUTO( vr_hand_y, "0", FCVAR_MOVEVARS, "Hand position y" );
+CVAR_DEFINE_AUTO( vr_hand_z, "0", FCVAR_MOVEVARS, "Hand position z" );
+CVAR_DEFINE_AUTO( vr_hand_pitch, "0", FCVAR_MOVEVARS, "Hand pitch angle" );
+CVAR_DEFINE_AUTO( vr_hand_yaw, "0", FCVAR_MOVEVARS, "Hand yaw angle" );
+CVAR_DEFINE_AUTO( vr_hand_roll, "0", FCVAR_MOVEVARS, "Hand roll angle" );
 CVAR_DEFINE_AUTO( vr_hmd_pitch, "0", FCVAR_MOVEVARS, "Camera pitch angle" );
 CVAR_DEFINE_AUTO( vr_hmd_yaw, "0", FCVAR_MOVEVARS, "Camera yaw angle" );
 CVAR_DEFINE_AUTO( vr_hmd_roll, "0", FCVAR_MOVEVARS, "Camera roll angle" );
@@ -1541,6 +1548,13 @@ void Host_VRInit( void )
 	Cvar_RegisterVariable( &vr_camera_y );
 	Cvar_RegisterVariable( &vr_camera_z );
 	Cvar_RegisterVariable( &vr_gamemode );
+	Cvar_RegisterVariable( &vr_hand_active );
+	Cvar_RegisterVariable( &vr_hand_x );
+	Cvar_RegisterVariable( &vr_hand_y );
+	Cvar_RegisterVariable( &vr_hand_z );
+	Cvar_RegisterVariable( &vr_hand_pitch );
+	Cvar_RegisterVariable( &vr_hand_yaw );
+	Cvar_RegisterVariable( &vr_hand_roll );
 	Cvar_RegisterVariable( &vr_hmd_pitch );
 	Cvar_RegisterVariable( &vr_hmd_yaw );
 	Cvar_RegisterVariable( &vr_hmd_roll );
@@ -1625,22 +1639,36 @@ void Host_VRInput( void )
 	int primaryController = rightHanded ? 1 : 0;
 	int secondaryController = rightHanded ? 0 : 1;
 	XrPosef hmd = VR_GetView(0);
-	XrPosef pose = IN_VRGetPose(primaryController);
-	XrVector3f angles = XrQuaternionf_ToEulerAngles(pose.orientation);
+	XrPosef hand = IN_VRGetPose(secondaryController);
+	XrPosef weapon = IN_VRGetPose(primaryController);
+	XrVector3f angles = XrQuaternionf_ToEulerAngles(weapon.orientation);
 	bool cursorActive = IN_VRIsActive(primaryController);
 	int lbuttons = IN_VRGetButtonState(secondaryController);
 	int rbuttons = IN_VRGetButtonState(primaryController);
 	XrVector2f left = IN_VRGetJoystickState(secondaryController);
 	XrVector2f right = IN_VRGetJoystickState(primaryController);
 
-	// Get euler angles
+	// Get weaponEuler angles
 	bool zoomed = Cvar_VariableValue("vr_zoomed") > 0;
-	XrVector3f euler = XrQuaternionf_ToEulerAngles(zoomed ? hmd.orientation : pose.orientation);
+	XrVector3f weaponEuler = XrQuaternionf_ToEulerAngles(zoomed ? hmd.orientation : weapon.orientation);
+	XrVector3f handEuler = XrQuaternionf_ToEulerAngles(hand.orientation);
 	XrVector3f hmdEuler = XrQuaternionf_ToEulerAngles(hmd.orientation);
 	vec3_t hmdAngles = {hmdEuler.x, hmdEuler.y, hmdEuler.z};
-	vec3_t weaponAngles = {euler.x, euler.y, euler.z};
-	vec3_t weaponPosition = {pose.position.x, pose.position.y, pose.position.z};
+	vec3_t handAngles = {handEuler.x, handEuler.y, handEuler.z};
+	vec3_t weaponAngles = {weaponEuler.x, weaponEuler.y, weaponEuler.z};
+	vec3_t weaponPosition = {weapon.position.x, weapon.position.y, weapon.position.z};
+	vec3_t handPosition = {hand.position.x, hand.position.y, hand.position.z};
 	vec3_t hmdPosition = {hmd.position.x, hmd.position.y, hmd.position.z};
+
+	// Two hand weapons and hand pointer
+	if (Cvar_VariableValue("vr_hand_active") > 0) {
+		float dirX = hmdPosition[0] - handPosition[0];
+		float dirY = hmdPosition[2] - handPosition[2];
+		float dirZ = hmdPosition[1] - handPosition[1] - 0.15f;
+		float dir = sqrt(dirX * dirX + dirY * dirY);
+		weaponAngles[PITCH] = RAD2DEG(sin(dirZ / dir));
+		weaponAngles[YAW] = RAD2DEG(atan2(dirX, dirY));
+	}
 
 	// Change weapon angles if throwing a grenade
 	if (Cvar_VariableValue("vr_weapon_throw_active") > 0.5f) {
@@ -1672,10 +1700,10 @@ void Host_VRInput( void )
 			right.y = vr_input[1];
 		}
 		Host_VRWeaponCrosshair();
-		Host_VRMotionControls(hmdAngles, hmdPosition, weaponPosition);
+		Host_VRMotionControls(hmdAngles, handPosition, hmdPosition, weaponPosition);
 		Host_VRMovementPlayer(hmdAngles, hmdPosition, weaponAngles, left.x, left.y);
-		Host_VRMovementEntity(zoomed, hmdAngles, hmdPosition, weaponPosition);
-		Host_VRRotations(zoomed, hmdAngles, hmdPosition, weaponAngles, right.x, right.y);
+		Host_VRMovementEntity(zoomed, handPosition, hmdAngles, hmdPosition, weaponPosition);
+		Host_VRRotations(zoomed, handAngles, hmdAngles, hmdPosition, weaponAngles, right.x, right.y);
 	} else {
 		// Measure player when not in game mode
 		vr_hmd_offset[2] = hmd.position.y;
@@ -1942,18 +1970,30 @@ bool Host_VRMenuInput( bool cursorActive, bool gameMode, bool swapped, int lbutt
 	return pressedInUI;
 }
 
-void Host_VRMotionControls( vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponPosition)
+void Host_VRMotionControls( vec3_t hmdAngles, vec3_t handPosition, vec3_t hmdPosition, vec3_t weaponPosition)
 {
 	// Get information
 	static float lastSpeed = 0;
 	static float lastForward = 0;
 	float hmdYaw = DEG2RAD(hmdAngles[YAW]);
-	float dx = hmdPosition[0] - weaponPosition[0];
-	float dy = hmdPosition[2] - weaponPosition[2];
-	float dz = hmdPosition[1] - weaponPosition[1];
-	float forward = dx * sin(hmdYaw) + dy * cos(hmdYaw);
-	float speed = fabs(lastForward - forward) / (float)VR_GetRefreshRate();
+	float handDX = hmdPosition[0] - handPosition[0];
+	float handDY = hmdPosition[2] - handPosition[2];
+	float forwardHand = handDX * sin(hmdYaw) + handDY * cos(hmdYaw);
+	float weaponDX = hmdPosition[0] - weaponPosition[0];
+	float weaponDY = hmdPosition[2] - weaponPosition[2];
+	float weaponDZ = hmdPosition[1] - weaponPosition[1];
+	float forwardWeapon = weaponDX * sin(hmdYaw) + weaponDY * cos(hmdYaw);
+	float speed = fabs(lastForward - forwardWeapon) / (float)VR_GetRefreshRate();
 	const char* weapon = Cvar_VariableString("vr_weapon_pivot_name");
+
+	//Hand use action
+	static bool lastUse = false;
+	bool use = forwardHand > 0.6f;
+	if (lastUse != use) {
+		Cbuf_AddText( use ? "+use\n" : "-use\n" );
+		lastUse = use;
+	}
+	Cvar_SetValue("vr_hand_active", forwardHand > 0.5f ? 1 : 0);
 
 	//Knife attack
 	if ((strcmp(weapon, "models/v_knife.mdl") == 0)) {
@@ -1963,8 +2003,8 @@ void Host_VRMotionControls( vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponP
 		if (lastSpeed > speed) {
 			attackStarted = true;
 		}
-		bool fastAttack = attackStarted && (forward > 0.3f) && (speed > 0.0002f);
-		bool slowAttack = attackStarted && (forward > 0.3f) && (speed > 0.0001f) && !fastAttack;
+		bool fastAttack = attackStarted && (forwardWeapon > 0.3f) && (speed > 0.0002f);
+		bool slowAttack = attackStarted && (forwardWeapon > 0.3f) && (speed > 0.0001f) && !fastAttack;
 
 		if (fastAttack != lastFastAttack) {
 			Cvar_SetValue("vr_weapon_anim", 0);
@@ -1992,9 +2032,9 @@ void Host_VRMotionControls( vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponP
 		static float startDX = 0;
 		static float startDY = 0;
 		static float startDZ = 0;
-		float dirX = dx - startDX;
-		float dirY = dy - startDY;
-		float dirZ = dz - startDZ;
+		float dirX = weaponDX - startDX;
+		float dirY = weaponDY - startDY;
+		float dirZ = weaponDZ - startDZ;
 
 		static bool lastThrowing = false;
 		bool throwing = speed > 0.0002f;
@@ -2005,9 +2045,9 @@ void Host_VRMotionControls( vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponP
 			Cvar_SetValue("vr_weapon_throw_yaw", atan2(dirX, dirY));
 		} else if (speed < 0.0001f) {
 			Cvar_LazySet("vr_weapon_throw_active", 0);
-			startDX = dx;
-			startDY = dy;
-			startDZ = dz;
+			startDX = weaponDX;
+			startDY = weaponDY;
+			startDZ = weaponDZ;
 		}
 		if (throwing != lastThrowing) {
 			Cbuf_AddText( throwing ? "+attack\n" : "-attack\n" );
@@ -2022,11 +2062,11 @@ void Host_VRMotionControls( vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponP
 	}
 
 	//Remember last status
-	lastForward = forward;
+	lastForward = forwardWeapon;
 	lastSpeed = speed;
 }
 
-void Host_VRMovementEntity( bool zoomed, vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponPosition )
+void Host_VRMovementEntity( bool zoomed, vec3_t handPosition, vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponPosition )
 {
 	// Camera pushback
 	float limit = 1.0f;
@@ -2045,6 +2085,15 @@ void Host_VRMovementEntity( bool zoomed, vec3_t hmdAngles, vec3_t hmdPosition, v
 	Cvar_SetValue("vr_camera_x", zoomed ? 0 : camerax * scale);
 	Cvar_SetValue("vr_camera_y", zoomed ? 0 : cameray * scale);
 	Cvar_SetValue("vr_camera_z", zoomed ? 0 : (hmdPosition[1] - vr_hmd_offset[2]) * scale);
+
+	// Hand movement
+	dx = handPosition[0] - hmdPosition[0];
+	dy = handPosition[2] - hmdPosition[2];
+	float handX = dx * cos(hmdYaw) - dy * sin(hmdYaw);
+	float handY = dx * sin(hmdYaw) + dy * cos(hmdYaw);
+	Cvar_SetValue("vr_hand_x", zoomed ? INT_MAX : handX * scale);
+	Cvar_SetValue("vr_hand_y", zoomed ? INT_MAX : handY * scale);
+	Cvar_SetValue("vr_hand_z", zoomed ? INT_MAX : (handPosition[1] - vr_hmd_offset[2]) * scale);
 
 	// Weapon movement
 	dx = weaponPosition[0] - hmdPosition[0];
@@ -2117,7 +2166,7 @@ void Host_VRMovementPlayer( vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponA
 	lastMove6Dof = move6DoF;
 }
 
-void Host_VRRotations( bool zoomed, vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponAngles, float thumbstickX, float thumbstickY )
+void Host_VRRotations( bool zoomed, vec3_t handAngles, vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponAngles, float thumbstickX, float thumbstickY )
 {
 	// Weapon rotation
 	static float lastYaw = 0;
@@ -2131,6 +2180,11 @@ void Host_VRRotations( bool zoomed, vec3_t hmdAngles, vec3_t hmdPosition, vec3_t
 	lastYaw = weaponAngles[YAW];
 	lastPitch = weaponAngles[PITCH];
 	Cvar_SetValue("vr_weapon_roll", weaponAngles[ROLL]);
+
+	// Hand rotation
+	Cvar_SetValue("vr_hand_pitch", handAngles[PITCH]);
+	Cvar_SetValue("vr_hand_yaw", handAngles[YAW] - weaponAngles[YAW]);
+	Cvar_SetValue("vr_hand_roll", handAngles[ROLL]);
 
 	// Snap turn
 	float snapTurnStep = 0;
