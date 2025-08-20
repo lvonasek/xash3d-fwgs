@@ -2036,8 +2036,11 @@ void Host_VRMotionControls( vec3_t hmdAngles, vec3_t handPosition, vec3_t hmdPos
 	}
 	//Grenade throwing
 	else if ((strcmp(weapon, "models/v_flashbang.mdl") == 0) ||
-		(strcmp(weapon, "models/v_hegrenade.mdl") == 0) ||
-		(strcmp(weapon, "models/v_smokegrenade.mdl") == 0)) {
+			 (strcmp(weapon, "models/v_hegrenade.mdl") == 0) ||
+			 (strcmp(weapon, "models/v_smokegrenade.mdl") == 0) ||
+			 (strcmp(weapon, "models/shield/v_shield_flashbang.mdl") == 0) ||
+			 (strcmp(weapon, "models/shield/v_shield_hegrenade.mdl") == 0) ||
+			 (strcmp(weapon, "models/shield/v_shield_smokegrenade.mdl") == 0)) {
 
 		static float startDX = 0;
 		static float startDY = 0;
@@ -2310,7 +2313,10 @@ void Host_VRWeaponCrosshair()
 	if ((strcmp(weapon, "models/v_knife.mdl") == 0) ||
 		(strcmp(weapon, "models/v_flashbang.mdl") == 0) ||
 		(strcmp(weapon, "models/v_hegrenade.mdl") == 0) ||
-		(strcmp(weapon, "models/v_smokegrenade.mdl") == 0)) {
+		(strcmp(weapon, "models/v_smokegrenade.mdl") == 0) ||
+		(strcmp(weapon, "models/shield/v_shield_flashbang.mdl") == 0) ||
+		(strcmp(weapon, "models/shield/v_shield_hegrenade.mdl") == 0) ||
+		(strcmp(weapon, "models/shield/v_shield_smokegrenade.mdl") == 0)) {
 		visible = false;
 	}
 
