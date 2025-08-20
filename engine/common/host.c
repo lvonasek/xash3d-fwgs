@@ -1981,8 +1981,8 @@ bool Host_VRMenuInput( bool cursorActive, bool gameMode, bool swapped, int lbutt
 void Host_VRMotionControls( vec3_t hmdAngles, vec3_t handPosition, vec3_t hmdPosition, vec3_t weaponPosition)
 {
 	// Get information
+	static float lastLen = 0;
 	static float lastSpeed = 0;
-	static float lastForward = 0;
 	float hmdYaw = DEG2RAD(hmdAngles[YAW]);
 	float handDX = hmdPosition[0] - handPosition[0];
 	float handDY = hmdPosition[2] - handPosition[2];
@@ -1990,20 +1990,22 @@ void Host_VRMotionControls( vec3_t hmdAngles, vec3_t handPosition, vec3_t hmdPos
 	float weaponDX = hmdPosition[0] - weaponPosition[0];
 	float weaponDY = hmdPosition[2] - weaponPosition[2];
 	float weaponDZ = hmdPosition[1] - weaponPosition[1];
+	float lenWeapon = fabs(weaponPosition[0]) + fabs(weaponPosition[2]);
 	float forwardWeapon = weaponDX * sin(hmdYaw) + weaponDY * cos(hmdYaw);
-	float speed = fabs(lastForward - forwardWeapon) / (float)VR_GetRefreshRate();
+	float speed = fabs(lastLen - lenWeapon) / (float)VR_GetRefreshRate();
 	const char* weapon = Cvar_VariableString("vr_weapon_pivot_name");
 
 	//Hand use action
 	static bool lastUse = false;
 	static const char* prefixShield = "models/shield/v_";
+	bool hasDual = strcmp(weapon, "models/v_elite.mdl") == 0;
 	bool hasShield = strncmp(weapon, prefixShield, strlen(prefixShield)) == 0;
-	bool use = (forwardHand > 0.65f) && !hasShield;
+	bool use = (forwardHand > 0.65f) && !hasShield && !hasDual;
 	if (lastUse != use) {
 		Cbuf_AddText( use ? "+use\n" : "-use\n" );
 		lastUse = use;
 	}
-	Cvar_SetValue("vr_hand_active", (forwardHand > 0.6f) && !hasShield ? 1 : 0);
+	Cvar_SetValue("vr_hand_active", (forwardHand > 0.6f) && !hasShield && !hasDual ? 1 : 0);
 
 	//Knife attack
 	if ((strcmp(weapon, "models/v_knife.mdl") == 0)) {
@@ -2075,7 +2077,7 @@ void Host_VRMotionControls( vec3_t hmdAngles, vec3_t handPosition, vec3_t hmdPos
 	}
 
 	//Remember last status
-	lastForward = forwardWeapon;
+	lastLen = lenWeapon;
 	lastSpeed = speed;
 }
 
