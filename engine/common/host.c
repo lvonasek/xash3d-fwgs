@@ -326,6 +326,7 @@ CVAR_DEFINE_AUTO( vr_msaa, "0", FCVAR_ARCHIVE, "Game rendering subpixel renderin
 CVAR_DEFINE_AUTO( vr_refreshrate, "0", FCVAR_ARCHIVE, "1=force 90hz refresh rate" );
 CVAR_DEFINE_AUTO( vr_righthand, "1", FCVAR_ARCHIVE, "Use right hand mapping" );
 CVAR_DEFINE_AUTO( vr_supersampling, "1.1", FCVAR_ARCHIVE, "Game rendering resolution" );
+CVAR_DEFINE_AUTO( vr_walkdirection, "1", FCVAR_ARCHIVE, "0=direction from controller, 1=direction from HMD" );
 CVAR_DEFINE_AUTO( vr_worldscale, "30", FCVAR_ARCHIVE, "Sets the world scale for stereo separation" );
 CVAR_DEFINE_AUTO( vr_xhair, "1", FCVAR_ARCHIVE, "Cross-hair rendering" );
 
@@ -1596,6 +1597,7 @@ void Host_VRInit( void )
 	Cvar_RegisterVariable( &vr_weapon_y );
 	Cvar_RegisterVariable( &vr_weapon_z );
 	Cvar_RegisterVariable( &vr_supersampling );
+	Cvar_RegisterVariable( &vr_walkdirection );
 	Cvar_RegisterVariable( &vr_worldscale );
 	Cvar_RegisterVariable( &vr_xhair );
 	Cvar_RegisterVariable( &vr_xhair_x );
@@ -2175,6 +2177,12 @@ void Host_VRMovementPlayer( vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponA
 				move6DoF = true;
 			}
 		}
+	} else if (Cvar_VariableValue("vr_walkdirection") > 0.5f) {
+		float dx = thumbstickX;
+		float dy = thumbstickY;
+		float yaw = hmdYaw - DEG2RAD(weaponAngles[YAW]);
+		thumbstickX = dx * cos(yaw) - dy * sin(yaw);
+		thumbstickY = dx * sin(yaw) + dy * cos(yaw);
 	}
 	clgame.dllFuncs.pfnMoveEvent( thumbstickY, thumbstickX );
 	VectorCopy(currentPosition, lastPosition);
