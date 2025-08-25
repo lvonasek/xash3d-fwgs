@@ -408,18 +408,6 @@ void R_SetupFrustum( void )
 		gEngfuncs.Cvar_SetValue("vr_offset_y", offsetY);
 	}
 
-	// VR stereo calculation
-	matrix4x4 m;
-	Matrix4x4_CreateModelview( m );
-	Matrix4x4_ConcatTranslate(m, 0, gEngfuncs.pfnGetCvarFloat("vr_worldscale") * (VR_IPD / 2.0f) *
-									((gEngfuncs.pfnGetCvarFloat("vr_stereo_side") - 0.5f) * 2.0f), 0);
-	Matrix4x4_ConcatRotate( m, -RI.viewangles[2], 1, 0, 0 );
-	Matrix4x4_ConcatRotate( m, -RI.viewangles[0], 0, 1, 0 );
-	Matrix4x4_ConcatRotate( m, -RI.viewangles[1], 0, 0, 1 );
-	RI.vieworg[0] -= m[3][0];
-	RI.vieworg[1] -= m[3][1];
-	RI.vieworg[2] -= m[3][2];
-
 	if( !r_lockfrustum.value )
 	{
 		VectorCopy( RI.vieworg, RI.cullorigin );
@@ -471,6 +459,9 @@ R_SetupModelviewMatrix
 static void R_SetupModelviewMatrix( matrix4x4 m )
 {
 	Matrix4x4_CreateModelview( m );
+	Matrix4x4_ConcatTranslate(m, 0, gEngfuncs.pfnGetCvarFloat("vr_worldscale") * (VR_IPD / 2.0f) *
+											((gEngfuncs.pfnGetCvarFloat("vr_stereo_side") - 0.5f) * 2.0f), 0);
+
 	Matrix4x4_ConcatRotate( m, -RI.viewangles[2], 1, 0, 0 );
 	Matrix4x4_ConcatRotate( m, -RI.viewangles[0], 0, 1, 0 );
 	Matrix4x4_ConcatRotate( m, -RI.viewangles[1], 0, 0, 1 );
