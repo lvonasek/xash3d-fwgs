@@ -251,6 +251,7 @@ CVAR_DEFINE_AUTO( vr_hand_z, "0", FCVAR_MOVEVARS, "Hand position z" );
 CVAR_DEFINE_AUTO( vr_hand_pitch, "0", FCVAR_MOVEVARS, "Hand pitch angle" );
 CVAR_DEFINE_AUTO( vr_hand_yaw, "0", FCVAR_MOVEVARS, "Hand yaw angle" );
 CVAR_DEFINE_AUTO( vr_hand_roll, "0", FCVAR_MOVEVARS, "Hand roll angle" );
+CVAR_DEFINE_AUTO( vr_hand_swap, "0", FCVAR_MOVEVARS, "Hand/weapon swap during dual hand weapons" );
 CVAR_DEFINE_AUTO( vr_hmd_pitch, "0", FCVAR_MOVEVARS, "Camera pitch angle" );
 CVAR_DEFINE_AUTO( vr_hmd_yaw, "0", FCVAR_MOVEVARS, "Camera yaw angle" );
 CVAR_DEFINE_AUTO( vr_hmd_roll, "0", FCVAR_MOVEVARS, "Camera roll angle" );
@@ -1557,6 +1558,7 @@ void Host_VRInit( void )
 	Cvar_RegisterVariable( &vr_hand_pitch );
 	Cvar_RegisterVariable( &vr_hand_yaw );
 	Cvar_RegisterVariable( &vr_hand_roll );
+	Cvar_RegisterVariable( &vr_hand_swap );
 	Cvar_RegisterVariable( &vr_hmd_pitch );
 	Cvar_RegisterVariable( &vr_hmd_yaw );
 	Cvar_RegisterVariable( &vr_hmd_roll );
@@ -1664,10 +1666,23 @@ void Host_VRInput( void )
 	vec3_t handPosition = {hand.position.x, hand.position.y, hand.position.z};
 	vec3_t hmdPosition = {hmd.position.x, hmd.position.y, hmd.position.z};
 
+	// Single hand mapping when shield used
 	if (Cvar_VariableValue("vr_shielded") > 0) {
-		weaponAngles[PITCH] = handAngles[PITCH];
-		weaponAngles[YAW] = handAngles[YAW];
-		weaponAngles[ROLL] = handAngles[ROLL];
+		VectorCopy(handAngles, weaponAngles);
+		VectorCopy(handPosition, weaponPosition);
+	}
+
+	// Swap left-right hand based on two hand weapon status
+	if (strcmp(Cvar_VariableString("vr_weapon_pivot_name"), "models/v_elite.mdl") == 0) {
+		if (Cvar_VariableValue("vr_hand_swap") > 0.5f) {
+			vec3_t angles, position;
+			VectorCopy(handAngles, angles);
+			VectorCopy(handPosition, position);
+			VectorCopy(weaponAngles, handAngles);
+			VectorCopy(weaponPosition, handPosition);
+			VectorCopy(angles, weaponAngles);
+			VectorCopy(position, weaponPosition);
+		}
 	}
 
 	// Two hand weapons and hand pointer
