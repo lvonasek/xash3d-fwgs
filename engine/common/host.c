@@ -1725,7 +1725,7 @@ void Host_VRInput( void )
 			right.y = vr_input[1];
 		}
 		Host_VRWeaponCrosshair();
-		Host_VRMotionControls(hmdAngles, handPosition, hmdPosition, weaponPosition);
+		Host_VRMotionControls(zoomed, hmdAngles, handPosition, hmdPosition, weaponPosition);
 		Host_VRMovementPlayer(hmdAngles, hmdPosition, weaponAngles, left.x, left.y);
 		Host_VRMovementEntity(zoomed, handPosition, hmdAngles, hmdPosition, weaponPosition);
 		Host_VRRotations(zoomed, handAngles, hmdAngles, hmdPosition, weaponAngles, right.x, right.y);
@@ -1995,11 +1995,12 @@ bool Host_VRMenuInput( bool cursorActive, bool gameMode, bool swapped, int lbutt
 	return pressedInUI;
 }
 
-void Host_VRMotionControls( vec3_t hmdAngles, vec3_t handPosition, vec3_t hmdPosition, vec3_t weaponPosition)
+void Host_VRMotionControls( bool zoomed, vec3_t hmdAngles, vec3_t handPosition, vec3_t hmdPosition, vec3_t weaponPosition)
 {
 	// Get information
 	static float lastLen = 0;
 	static float lastSpeed = 0;
+	static char lastWeapon[64];
 	float hmdYaw = DEG2RAD(hmdAngles[YAW]);
 	float handDX = hmdPosition[0] - handPosition[0];
 	float handDY = hmdPosition[2] - handPosition[2];
@@ -2088,6 +2089,35 @@ void Host_VRMotionControls( vec3_t hmdAngles, vec3_t handPosition, vec3_t hmdPos
 			}
 			lastThrowing = throwing;
 		}
+	}
+	//Weapon zoom by motion
+	else if ((strcmp(weapon, "models/v_aug.mdl") == 0) ||
+			(strcmp(weapon, "models/v_awp.mdl") == 0) ||
+			(strcmp(weapon, "models/v_g3sg1.mdl") == 0) ||
+			(strcmp(weapon, "models/v_scout.mdl") == 0) ||
+			(strcmp(weapon, "models/v_sg552.mdl") == 0)) {
+		static bool zoomByMotion = false;
+		if (strcmp(weapon, lastWeapon) != 0) {
+			zoomByMotion = false;
+		}
+		bool motionActive = Cvar_VariableValue("vr_hand_active") > 0.5f;
+		bool rifle = (strcmp(weapon, "models/v_awp.mdl") == 0) ||
+					 (strcmp(weapon, "models/v_g3sg1.mdl") == 0) ||
+					 (strcmp(weapon, "models/v_scout.mdl") == 0);
+		static bool zoomRequested = false;
+		if (zoomRequested) {
+			Cbuf_AddText( "-attack2\n" );
+			zoomRequested = false;
+			zoomByMotion = zoomed;
+		} else if (motionActive && !zoomed && (!rifle || !zoomByMotion)) {
+			Cbuf_AddText( "+attack2\n" );
+			zoomRequested = true;
+		} else if (!motionActive && zoomed && zoomByMotion) {
+			Cbuf_AddText( "+attack2\n" );
+			zoomRequested = true;
+		}
+		Cvar_LazySet("vr_weapon_anim", 1);
+		Cvar_LazySet("vr_weapon_throw_active", 0);
 	} else {
 		Cvar_LazySet("vr_weapon_anim", 1);
 		Cvar_LazySet("vr_weapon_throw_active", 0);
@@ -2096,6 +2126,7 @@ void Host_VRMotionControls( vec3_t hmdAngles, vec3_t handPosition, vec3_t hmdPos
 	//Remember last status
 	lastLen = lenWeapon;
 	lastSpeed = speed;
+	strcpy(lastWeapon, weapon);
 }
 
 void Host_VRMovementEntity( bool zoomed, vec3_t handPosition, vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponPosition )
