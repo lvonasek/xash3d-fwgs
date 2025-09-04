@@ -290,6 +290,7 @@ CVAR_DEFINE_AUTO( vr_zoomed, "0", FCVAR_MOVEVARS, "Flag if the scene zoomed" );
 
 
 CVAR_DEFINE_AUTO( vr_6dof, "1", FCVAR_ARCHIVE, "Use 6DoF world tracking" );
+CVAR_DEFINE_AUTO( vr_arm_length, "3", FCVAR_ARCHIVE, "Arm length constant" );
 CVAR_DEFINE_AUTO( vr_button_alt, "vr_button_x", FCVAR_ARCHIVE, "Button to active alternative mapping" );
 CVAR_DEFINE_AUTO( vr_button_a, "+duck", FCVAR_ARCHIVE, "Controller mapping" );
 CVAR_DEFINE_AUTO( vr_button_b, "+jump", FCVAR_ARCHIVE, "Controller mapping" );
@@ -1606,6 +1607,7 @@ void Host_VRInit( void )
 	Cvar_RegisterVariable( &vr_xhair_y );
 
 	Cvar_RegisterVariable( &vr_6dof );
+	Cvar_RegisterVariable( &vr_arm_length );
 	Cvar_RegisterVariable( &vr_button_alt );
 	Cvar_RegisterVariable( &vr_button_a );
 	Cvar_RegisterVariable( &vr_button_b );
@@ -2011,6 +2013,7 @@ void Host_VRMotionControls( bool zoomed, vec3_t hmdAngles, vec3_t handPosition, 
 	float lenWeapon = fabs(weaponPosition[0]) + fabs(weaponPosition[2]);
 	float forwardWeapon = weaponDX * sin(hmdYaw) + weaponDY * cos(hmdYaw);
 	float speed = fabs(lastLen - lenWeapon) / (float)VR_GetRefreshRate();
+	float limit = Cvar_VariableValue("vr_arm_length") * 0.1f + 0.3f;
 	const char* weapon = Cvar_VariableString("vr_weapon_pivot_name");
 
 	//Hand use action
@@ -2018,12 +2021,12 @@ void Host_VRMotionControls( bool zoomed, vec3_t hmdAngles, vec3_t handPosition, 
 	static const char* prefixShield = "models/shield/v_";
 	bool hasDual = strcmp(weapon, "models/v_elite.mdl") == 0;
 	bool hasShield = strncmp(weapon, prefixShield, strlen(prefixShield)) == 0;
-	bool use = (forwardHand > 0.65f) && !hasShield && !hasDual;
+	bool use = (forwardHand > limit * 1.1f) && !hasShield && !hasDual;
 	if (lastUse != use) {
 		Cbuf_AddText( use ? "+use\n" : "-use\n" );
 		lastUse = use;
 	}
-	Cvar_SetValue("vr_hand_active", (forwardHand > 0.6f) && !hasShield && !hasDual ? 1 : 0);
+	Cvar_SetValue("vr_hand_active", (forwardHand > limit) && !hasShield && !hasDual ? 1 : 0);
 
 	//Knife attack
 	if ((strcmp(weapon, "models/v_knife.mdl") == 0)) {
@@ -2033,8 +2036,8 @@ void Host_VRMotionControls( bool zoomed, vec3_t hmdAngles, vec3_t handPosition, 
 		if (lastSpeed > speed) {
 			attackStarted = true;
 		}
-		bool fastAttack = attackStarted && (forwardWeapon > 0.3f) && (speed > 0.0002f);
-		bool slowAttack = attackStarted && (forwardWeapon > 0.3f) && (speed > 0.0001f) && !fastAttack;
+		bool fastAttack = attackStarted && (forwardWeapon > limit * 0.5f) && (speed > 0.0002f);
+		bool slowAttack = attackStarted && (forwardWeapon > limit * 0.5f) && (speed > 0.0001f) && !fastAttack;
 
 		if (fastAttack != lastFastAttack) {
 			Cvar_SetValue("vr_weapon_anim", 0);
@@ -2100,7 +2103,7 @@ void Host_VRMotionControls( bool zoomed, vec3_t hmdAngles, vec3_t handPosition, 
 		if (strcmp(weapon, lastWeapon) != 0) {
 			zoomByMotion = false;
 		}
-		bool motionActive = Cvar_VariableValue("vr_hand_active") > 0.5f;
+		bool motionActive = Cvar_VariableValue("vr_hand_active") > limit * 0.8f;
 		bool rifle = (strcmp(weapon, "models/v_awp.mdl") == 0) ||
 					 (strcmp(weapon, "models/v_g3sg1.mdl") == 0) ||
 					 (strcmp(weapon, "models/v_scout.mdl") == 0);
