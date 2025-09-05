@@ -286,6 +286,7 @@ CVAR_DEFINE_AUTO( vr_weapon_y, "0", FCVAR_MOVEVARS, "Weapon position y" );
 CVAR_DEFINE_AUTO( vr_weapon_z, "0", FCVAR_MOVEVARS, "Weapon position z" );
 CVAR_DEFINE_AUTO( vr_xhair_x, "0", FCVAR_MOVEVARS, "Cross-hair 2d position x" );
 CVAR_DEFINE_AUTO( vr_xhair_y, "0", FCVAR_MOVEVARS, "Cross-hair 2d position y" );
+CVAR_DEFINE_AUTO( vr_superzoomed, "0", FCVAR_MOVEVARS, "Flag if the scene super zoomed" );
 CVAR_DEFINE_AUTO( vr_zoomed, "0", FCVAR_MOVEVARS, "Flag if the scene zoomed" );
 
 
@@ -334,6 +335,7 @@ CVAR_DEFINE_AUTO( vr_xhair, "1", FCVAR_ARCHIVE, "Cross-hair rendering" );
 
 vec3_t vr_hmd_offset = {};
 vec2_t vr_input = {};
+bool vr_zoom_by_motion = true;
 
 static void Sys_PrintBugcompUsage( const char *exename )
 {
@@ -1637,6 +1639,7 @@ void Host_VRInit( void )
 	Cvar_RegisterVariable( &vr_button_thumbstick_dright_right_alt );
 	Cvar_RegisterVariable( &vr_button_thumbstick_press_right_alt );
 	Cvar_RegisterVariable( &vr_button_trigger_right_alt );
+	Cvar_RegisterVariable( &vr_superzoomed );
 	Cvar_RegisterVariable( &vr_zoomed );
 }
 
@@ -1658,6 +1661,7 @@ void Host_VRInput( void )
 
 	// Get weaponEuler angles
 	bool zoomed = Cvar_VariableValue("vr_zoomed") > 0;
+	bool superzoomed = Cvar_VariableValue("vr_superzoomed") > 0;
 	XrVector3f weaponEuler = XrQuaternionf_ToEulerAngles(zoomed ? hmd.orientation : weapon.orientation);
 	XrVector3f handEuler = XrQuaternionf_ToEulerAngles(hand.orientation);
 	XrVector3f hmdEuler = XrQuaternionf_ToEulerAngles(hmd.orientation);
@@ -1727,7 +1731,7 @@ void Host_VRInput( void )
 			right.y = vr_input[1];
 		}
 		Host_VRWeaponCrosshair();
-		Host_VRMotionControls(zoomed, hmdAngles, handPosition, hmdPosition, weaponPosition);
+		Host_VRMotionControls(zoomed, superzoomed, hmdAngles, handPosition, hmdPosition, weaponPosition);
 		Host_VRMovementPlayer(hmdAngles, hmdPosition, weaponAngles, left.x, left.y);
 		Host_VRMovementEntity(zoomed, handPosition, hmdAngles, hmdPosition, weaponPosition);
 		Host_VRRotations(zoomed, handAngles, hmdAngles, hmdPosition, weaponAngles, right.x, right.y);
@@ -1903,7 +1907,10 @@ void Host_VRCustomCommand( char* action )
 	else if (strcmp(action, "-vr_weapon_next\n") == 0) vr_input[1] = 0;
 	else if (strcmp(action, "+vr_weapon_prev\n") == 0) vr_input[1] = 1;
 	else if (strcmp(action, "-vr_weapon_prev\n") == 0) vr_input[1] = 0;
-	else if (strcmp(action, "+vr_scoreboard\n") == 0) {
+	else if (strcmp(action, "+attack2\n") == 0) {
+		vr_zoom_by_motion = false;
+		Cbuf_AddText( action );
+	} else if (strcmp(action, "+vr_scoreboard\n") == 0) {
 		Cbuf_AddText( "showscoreboard2 0.213333 0.835556 0.213333 0.835556 0 0 0 128\n" );
 	} else if (strcmp(action, "-vr_scoreboard\n") == 0) {
 		Cbuf_AddText( "hidescoreboard2\n" );
@@ -1997,7 +2004,7 @@ bool Host_VRMenuInput( bool cursorActive, bool gameMode, bool swapped, int lbutt
 	return pressedInUI;
 }
 
-void Host_VRMotionControls( bool zoomed, vec3_t hmdAngles, vec3_t handPosition, vec3_t hmdPosition, vec3_t weaponPosition)
+void Host_VRMotionControls( bool zoomed, bool superzoomed, vec3_t hmdAngles, vec3_t handPosition, vec3_t hmdPosition, vec3_t weaponPosition)
 {
 	// Get information
 	static float lastLen = 0;
@@ -2099,23 +2106,19 @@ void Host_VRMotionControls( bool zoomed, vec3_t hmdAngles, vec3_t handPosition, 
 			(strcmp(weapon, "models/v_g3sg1.mdl") == 0) ||
 			(strcmp(weapon, "models/v_scout.mdl") == 0) ||
 			(strcmp(weapon, "models/v_sg552.mdl") == 0)) {
-		static bool zoomByMotion = false;
 		if (strcmp(weapon, lastWeapon) != 0) {
-			zoomByMotion = false;
+			vr_zoom_by_motion = false;
 		}
 		bool motionActive = Cvar_VariableValue("vr_hand_active") > limit * 0.8f;
-		bool rifle = (strcmp(weapon, "models/v_awp.mdl") == 0) ||
-					 (strcmp(weapon, "models/v_g3sg1.mdl") == 0) ||
-					 (strcmp(weapon, "models/v_scout.mdl") == 0);
 		static bool zoomRequested = false;
 		if (zoomRequested) {
 			Cbuf_AddText( "-attack2\n" );
 			zoomRequested = false;
-			zoomByMotion = zoomed;
-		} else if (motionActive && !zoomed && (!rifle || !zoomByMotion)) {
+		} else if (motionActive && (!zoomed || superzoomed)) {
 			Cbuf_AddText( "+attack2\n" );
+			vr_zoom_by_motion = true;
 			zoomRequested = true;
-		} else if (!motionActive && zoomed && zoomByMotion) {
+		} else if (!motionActive && (zoomed || superzoomed) && vr_zoom_by_motion) {
 			Cbuf_AddText( "+attack2\n" );
 			zoomRequested = true;
 		}
