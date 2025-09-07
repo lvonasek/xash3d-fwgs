@@ -2036,14 +2036,14 @@ void Host_VRMotionControls( bool zoomed, bool superzoomed, vec3_t hmdAngles, vec
 	Cvar_SetValue("vr_hand_active", (forwardHand > limit) && !hasShield && !hasDual ? 1 : 0);
 
 	//Knife attack
-	if ((strcmp(weapon, "models/v_knife.mdl") == 0)) {
+	if ((strcmp(weapon, "models/v_knife.mdl") == 0) || (strcmp(weapon, "models/shield/v_shield_knife.mdl") == 0)) {
 		static bool attackStarted = false;
 		static bool lastFastAttack = false;
 		static bool lastSlowAttack = false;
 		if (lastSpeed > speed) {
 			attackStarted = true;
 		}
-		bool fastAttack = attackStarted && (forwardWeapon > limit * 0.5f) && (speed > 0.0002f);
+		bool fastAttack = attackStarted && (forwardWeapon > limit * 0.5f) && (speed > 0.0002f) && !hasShield;
 		bool slowAttack = attackStarted && (forwardWeapon > limit * 0.5f) && (speed > 0.0001f) && !fastAttack;
 
 		if (fastAttack != lastFastAttack) {
@@ -2080,7 +2080,7 @@ void Host_VRMotionControls( bool zoomed, bool superzoomed, vec3_t hmdAngles, vec
 		float dirZ = weaponDZ - startDZ;
 
 		static bool lastThrowing = false;
-		bool throwing = speed > 0.0002f;
+		bool throwing = speed > 0.00035f;
 		if (throwing) {
 			float dir = sqrt(dirX * dirX + dirY * dirY);
 			Cvar_LazySet("vr_weapon_throw_active", 1);
@@ -2376,6 +2376,7 @@ void Host_VRWeaponCrosshair()
 		(strcmp(weapon, "models/v_flashbang.mdl") == 0) ||
 		(strcmp(weapon, "models/v_hegrenade.mdl") == 0) ||
 		(strcmp(weapon, "models/v_smokegrenade.mdl") == 0) ||
+		(strcmp(weapon, "models/shield/v_shield_knife.mdl") == 0) ||
 		(strcmp(weapon, "models/shield/v_shield_flashbang.mdl") == 0) ||
 		(strcmp(weapon, "models/shield/v_shield_hegrenade.mdl") == 0) ||
 		(strcmp(weapon, "models/shield/v_shield_smokegrenade.mdl") == 0)) {
