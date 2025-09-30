@@ -313,8 +313,8 @@ void Host_VRInputFrame( void )
 
 	// Change weapon angles if throwing a grenade
 	if (Cvar_VariableValue("vr_weapon_throw_active") > 0.5f) {
-		weaponAngles[PITCH] = RAD2DEG(Cvar_VariableValue("vr_weapon_throw_pitch"));
-		weaponAngles[YAW] = RAD2DEG(Cvar_VariableValue("vr_weapon_throw_yaw"));
+		weaponAngles[PITCH] = Cvar_VariableValue("vr_weapon_throw_pitch");
+		weaponAngles[YAW] = Cvar_VariableValue("vr_weapon_throw_yaw");
 		weaponAngles[ROLL] = 0;
 	}
 
@@ -694,13 +694,22 @@ void Host_VRMotionControls( bool zoomed, bool superzoomed, vec3_t hmdAngles, vec
 		if (throwing) {
 			float dir = sqrt(dirX * dirX + dirY * dirY);
 			Cvar_LazySet("vr_weapon_throw_active", 1);
-			Cvar_SetValue("vr_weapon_throw_pitch", sin(dirZ / dir));
-			Cvar_SetValue("vr_weapon_throw_yaw", atan2(dirX, dirY));
+			Cvar_SetValue("vr_weapon_throw_pitch", RAD2DEG(sin(dirZ / dir)));
+			Cvar_SetValue("vr_weapon_throw_yaw", RAD2DEG(atan2(dirX, dirY)));
 		} else if (speed < 0.0001f) {
 			Cvar_LazySet("vr_weapon_throw_active", 0);
 			startDX = weaponDX;
 			startDY = weaponDY;
 			startDZ = weaponDZ;
+		}
+		if (lastThrowing) {
+			float diff = hmdAngles[YAW] - Cvar_VariableValue("vr_weapon_throw_yaw");
+			while (diff > 180) diff -= 360;
+			while (diff <-180) diff += 360;
+			//do not release the grenade when moving hand behind
+			if (fabs(diff) > 100) {
+				throwing = true;
+			}
 		}
 		if (throwing != lastThrowing) {
 			Cbuf_AddText( throwing ? "+attack\n" : "-attack\n" );
