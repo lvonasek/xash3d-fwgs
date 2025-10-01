@@ -708,6 +708,7 @@ void Host_VRMotionControls( bool zoomed, bool superzoomed, vec3_t hmdAngles, vec
 			while (diff <-180) diff += 360;
 			//do not release the grenade when moving hand behind
 			if (fabs(diff) > 100) {
+				Cvar_LazySet("vr_weapon_throw_active", 0);
 				throwing = true;
 			}
 		}
