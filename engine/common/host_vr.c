@@ -544,6 +544,15 @@ void Host_VRHaptics( bool rightHanded )
 		IN_VR_Vibrate(weaponPower, channel, 100);
 		Cvar_SetValue("vr_haptics_weapon", 0);
 	}
+
+	// Damage haptics
+	static int lastHealth = 0;
+	if (lastHealth > cl.local.health) {
+		float duration = (float)(lastHealth - cl.local.health) / 50.0f;
+		IN_VR_Vibrate(duration, 0, 100);
+		IN_VR_Vibrate(duration, 1, 100);
+	}
+	lastHealth = cl.local.health;
 }
 
 bool Host_VRMenuInput( bool cursorActive, bool gameMode, bool swapped, int lbuttons, int rbuttons, vec2_t cursor )
