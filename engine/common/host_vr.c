@@ -39,6 +39,7 @@ CVAR_DEFINE_AUTO( vr_hand_pitch, "0", FCVAR_MOVEVARS, "Hand pitch angle" );
 CVAR_DEFINE_AUTO( vr_hand_yaw, "0", FCVAR_MOVEVARS, "Hand yaw angle" );
 CVAR_DEFINE_AUTO( vr_hand_roll, "0", FCVAR_MOVEVARS, "Hand roll angle" );
 CVAR_DEFINE_AUTO( vr_hand_swap, "0", FCVAR_MOVEVARS, "Hand/weapon swap during dual hand weapons" );
+CVAR_DEFINE_AUTO( vr_haptics_weapon, "0", FCVAR_MOVEVARS, "Haptics amount for the weapon" );
 CVAR_DEFINE_AUTO( vr_hmd_pitch, "0", FCVAR_MOVEVARS, "Camera pitch angle" );
 CVAR_DEFINE_AUTO( vr_hmd_yaw, "0", FCVAR_MOVEVARS, "Camera yaw angle" );
 CVAR_DEFINE_AUTO( vr_hmd_roll, "0", FCVAR_MOVEVARS, "Camera roll angle" );
@@ -139,6 +140,7 @@ void Host_VRInit( void )
 	Cvar_RegisterVariable( &vr_hand_yaw );
 	Cvar_RegisterVariable( &vr_hand_roll );
 	Cvar_RegisterVariable( &vr_hand_swap );
+	Cvar_RegisterVariable( &vr_haptics_weapon );
 	Cvar_RegisterVariable( &vr_hmd_pitch );
 	Cvar_RegisterVariable( &vr_hmd_yaw );
 	Cvar_RegisterVariable( &vr_hmd_roll );
@@ -341,6 +343,7 @@ void Host_VRInputFrame( void )
 			right.y = vr_input[1];
 		}
 		Host_VRWeaponCrosshair();
+		Host_VRHaptics( rightHanded );
 		Host_VRMotionControls(zoomed, superzoomed, hmdAngles, handPosition, hmdPosition, weaponPosition);
 		Host_VRMovementPlayer(hmdAngles, hmdPosition, weaponAngles, left.x, left.y);
 		Host_VRMovementEntity(zoomed, handPosition, hmdAngles, hmdPosition, weaponPosition);
@@ -528,6 +531,18 @@ void Host_VRCustomCommand( char* action )
 		Cbuf_AddText( "hidescoreboard2\n" );
 	} else {
 		Cbuf_AddText( action );
+	}
+}
+
+void Host_VRHaptics( bool rightHanded )
+{
+	// Weapon haptics
+	bool handSwapped = Cvar_VariableValue("vr_hand_swap") > 0.5f;
+	float weaponPower = Cvar_VariableValue("vr_haptics_weapon");
+	if (weaponPower > 0) {
+		int channel = handSwapped == rightHanded ? 0 : 1;
+		IN_VR_Vibrate(weaponPower, channel, 100);
+		Cvar_SetValue("vr_haptics_weapon", 0);
 	}
 }
 
