@@ -109,6 +109,7 @@ CVAR_DEFINE_AUTO( vr_button_thumbstick_dleft_right_alt, "+vr_left", FCVAR_ARCHIV
 CVAR_DEFINE_AUTO( vr_button_thumbstick_dright_right_alt, "+vr_right", FCVAR_ARCHIVE, "Controller mapping" );
 CVAR_DEFINE_AUTO( vr_button_thumbstick_press_right_alt, "touch_hide say;touch_hide say2;messagemode", FCVAR_ARCHIVE, "Controller mapping" );
 CVAR_DEFINE_AUTO( vr_button_trigger_right_alt, "drop", FCVAR_ARCHIVE, "Controller mapping" );
+CVAR_DEFINE_AUTO( vr_haptics_enable, "1", FCVAR_ARCHIVE, "Flag if haptics are enabled" );
 CVAR_DEFINE_AUTO( vr_thumbstick_deadzone_left, "0.15", FCVAR_ARCHIVE, "Deadzone of thumbstick to filter drift" );
 CVAR_DEFINE_AUTO( vr_thumbstick_deadzone_right, "0.8", FCVAR_ARCHIVE, "Deadzone of thumbstick to filter drift" );
 CVAR_DEFINE_AUTO( vr_turn_angle, "45", FCVAR_ARCHIVE, "Angle to rotate by a thumbstick" );
@@ -140,6 +141,7 @@ void Host_VRInit( void )
 	Cvar_RegisterVariable( &vr_hand_yaw );
 	Cvar_RegisterVariable( &vr_hand_roll );
 	Cvar_RegisterVariable( &vr_hand_swap );
+	Cvar_RegisterVariable( &vr_haptics_enable );
 	Cvar_RegisterVariable( &vr_haptics_weapon );
 	Cvar_RegisterVariable( &vr_hmd_pitch );
 	Cvar_RegisterVariable( &vr_hmd_yaw );
@@ -343,7 +345,6 @@ void Host_VRInputFrame( void )
 			right.y = vr_input[1];
 		}
 		Host_VRWeaponCrosshair();
-		Host_VRHaptics( rightHanded );
 		Host_VRMotionControls(zoomed, superzoomed, hmdAngles, handPosition, hmdPosition, weaponPosition);
 		Host_VRMovementPlayer(hmdAngles, hmdPosition, weaponAngles, left.x, left.y);
 		Host_VRMovementEntity(zoomed, handPosition, hmdAngles, hmdPosition, weaponPosition);
@@ -355,6 +356,7 @@ void Host_VRInputFrame( void )
 		// No game actions when UI is shown
 		Host_VRButtonMapping(!rightHanded, 0, 0);
 	}
+	Host_VRHaptics( rightHanded );
 }
 
 void Host_VRButtonMap( unsigned int button, int currentButtons, int lastButtons, const char* name, bool alt )
@@ -536,6 +538,11 @@ void Host_VRCustomCommand( char* action )
 
 void Host_VRHaptics( bool rightHanded )
 {
+	// Check if haptics are enabled
+	if (Cvar_VariableValue("vr_haptics_enable") < 0.5f) {
+		return;
+	}
+
 	// Weapon haptics
 	bool handSwapped = Cvar_VariableValue("vr_hand_swap") > 0.5f;
 	float weaponPower = Cvar_VariableValue("vr_haptics_weapon");
