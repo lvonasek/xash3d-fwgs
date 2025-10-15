@@ -571,6 +571,7 @@ void Host_VRInit( void );
 bool Host_VRInitFrame( void );
 void Host_VRClientFrame( void );
 void Host_VRInputFrame( void );
+void Host_VRAdjustInput(  vec3_t handAngles, vec3_t handPosition, const vec3_t hmdPosition, vec3_t weaponAngles, vec3_t weaponPosition );
 void Host_VRButtonMap( unsigned int button, int currentButtons, int lastButtons, const char* name, bool alt );
 void Host_VRButtonMapping( bool swapped, int lbuttons, int rbuttons );
 bool Host_VRConfig();

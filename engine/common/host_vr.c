@@ -285,42 +285,7 @@ void Host_VRInputFrame( void )
 	vec3_t weaponPosition = {weapon.position.x, weapon.position.y, weapon.position.z};
 	vec3_t handPosition = {hand.position.x, hand.position.y, hand.position.z};
 	vec3_t hmdPosition = {hmd.position.x, hmd.position.y, hmd.position.z};
-
-	// Single hand mapping when shield used
-	if (Cvar_VariableValue("vr_shielded") > 0) {
-		VectorCopy(handAngles, weaponAngles);
-		VectorCopy(handPosition, weaponPosition);
-	}
-
-	// Swap left-right hand based on two hand weapon status
-	if (strcmp(Cvar_VariableString("vr_weapon_pivot_name"), "models/v_elite.mdl") == 0) {
-		if (Cvar_VariableValue("vr_hand_swap") > 0.5f) {
-			vec3_t angles, position;
-			VectorCopy(handAngles, angles);
-			VectorCopy(handPosition, position);
-			VectorCopy(weaponAngles, handAngles);
-			VectorCopy(weaponPosition, handPosition);
-			VectorCopy(angles, weaponAngles);
-			VectorCopy(position, weaponPosition);
-		}
-	}
-
-	// Two hand weapons and hand pointer
-	if (Cvar_VariableValue("vr_hand_active") > 0) {
-		float dirX = hmdPosition[0] - handPosition[0];
-		float dirY = hmdPosition[2] - handPosition[2];
-		float dirZ = hmdPosition[1] - handPosition[1] - 0.15f;
-		float dir = sqrt(dirX * dirX + dirY * dirY);
-		weaponAngles[PITCH] = RAD2DEG(sin(dirZ / dir));
-		weaponAngles[YAW] = RAD2DEG(atan2(dirX, dirY));
-	}
-
-	// Change weapon angles if throwing a grenade
-	if (Cvar_VariableValue("vr_weapon_throw_active") > 0.5f) {
-		weaponAngles[PITCH] = Cvar_VariableValue("vr_weapon_throw_pitch");
-		weaponAngles[YAW] = Cvar_VariableValue("vr_weapon_throw_yaw");
-		weaponAngles[ROLL] = 0;
-	}
+	Host_VRAdjustInput(handAngles, handPosition, hmdPosition, weaponAngles, weaponPosition);
 
 	// Menu control
 	vec2_t cursor = {};
@@ -357,6 +322,45 @@ void Host_VRInputFrame( void )
 		Host_VRButtonMapping(!rightHanded, 0, 0);
 	}
 	Host_VRHaptics( rightHanded );
+}
+
+void Host_VRAdjustInput( vec3_t handAngles, vec3_t handPosition, const vec3_t hmdPosition, vec3_t weaponAngles, vec3_t weaponPosition )
+{
+	// Single hand mapping when shield used
+	if (Cvar_VariableValue("vr_shielded") > 0) {
+		VectorCopy(handAngles, weaponAngles);
+		VectorCopy(handPosition, weaponPosition);
+	}
+
+	// Swap left-right hand based on two hand weapon status
+	if (strcmp(Cvar_VariableString("vr_weapon_pivot_name"), "models/v_elite.mdl") == 0) {
+		if (Cvar_VariableValue("vr_hand_swap") > 0.5f) {
+			vec3_t angles, position;
+			VectorCopy(handAngles, angles);
+			VectorCopy(handPosition, position);
+			VectorCopy(weaponAngles, handAngles);
+			VectorCopy(weaponPosition, handPosition);
+			VectorCopy(angles, weaponAngles);
+			VectorCopy(position, weaponPosition);
+		}
+	}
+
+	// Two hand weapons and hand pointer
+	if (Cvar_VariableValue("vr_hand_active") > 0) {
+		float dirX = hmdPosition[0] - handPosition[0];
+		float dirY = hmdPosition[2] - handPosition[2];
+		float dirZ = hmdPosition[1] - handPosition[1] - 0.15f;
+		float dir = sqrt(dirX * dirX + dirY * dirY);
+		weaponAngles[PITCH] = RAD2DEG(sin(dirZ / dir));
+		weaponAngles[YAW] = RAD2DEG(atan2(dirX, dirY));
+	}
+
+	// Change weapon angles if throwing a grenade
+	if (Cvar_VariableValue("vr_weapon_throw_active") > 0.5f) {
+		weaponAngles[PITCH] = Cvar_VariableValue("vr_weapon_throw_pitch");
+		weaponAngles[YAW] = Cvar_VariableValue("vr_weapon_throw_yaw");
+		weaponAngles[ROLL] = 0;
+	}
 }
 
 void Host_VRButtonMap( unsigned int button, int currentButtons, int lastButtons, const char* name, bool alt )
