@@ -358,9 +358,6 @@ void R_SetupFrustum( void )
 	// build the transformation matrix for the given view angles
 	AngleVectors( RI.viewangles, RI.vforward, RI.vright, RI.vup );
 
-	// in VR sprites need the player vectors, not view vectors
-	AngleVectors( RI.viewangles, RI.pforward, RI.pright, RI.pup );
-
 	// Share player transform with the client
 	gEngfuncs.Cvar_SetValue("vr_player_dir_x", RI.vforward[0]);
 	gEngfuncs.Cvar_SetValue("vr_player_dir_y", RI.vforward[1]);
@@ -392,6 +389,11 @@ void R_SetupFrustum( void )
 	} else {
 		RI.viewangles[2] = gEngfuncs.pfnGetCvarFloat("vr_hmd_roll");
 	}
+
+	// in VR sprites need to use different angles
+	vec3_t angles = {};
+	angles[YAW] = RI.viewangles[YAW];
+	AngleVectors( angles, RI.pforward, RI.pright, RI.pup );
 
 	// VR camera translation
 	if (gEngfuncs.pfnGetCvarFloat("vr_6dof") > 0) {
