@@ -413,6 +413,17 @@ void R_SetupFrustum( void )
 		gEngfuncs.Cvar_SetValue("vr_offset_y", offsetY);
 	}
 
+	// Workaround for glitch on the end of ducking animation
+	static vec3_t lastPos = {};
+	float scale = gEngfuncs.pfnGetCvarFloat("vr_worldscale");
+	if ((fabs(RI.vieworg[0] - lastPos[0]) < scale) &&
+		(fabs(RI.vieworg[1] - lastPos[1]) < scale) &&
+		(fabs(RI.vieworg[2] - lastPos[2]) > scale)) {
+		RI.vieworg[2] = lastPos[2];
+	} else {
+		VectorCopy(RI.vieworg, lastPos);
+	}
+
 	if( !r_lockfrustum.value )
 	{
 		VectorCopy( RI.vieworg, RI.cullorigin );
@@ -423,8 +434,7 @@ void R_SetupFrustum( void )
 		// VR stereo separation for culling
 		vec3_t offset;
 		VectorCopy( RI.vright, offset );
-		VectorScale( offset, VR_IPD / 2.0f, offset );
-		VectorScale( offset, gEngfuncs.pfnGetCvarFloat("vr_worldscale"), offset );
+		VectorScale( offset, scale * VR_IPD / 2.0f, offset );
 		VectorScale( offset, (gEngfuncs.pfnGetCvarFloat("vr_stereo_side") - 0.5f) * 2.0f, offset );
 		VectorSubtract( RI.cullorigin, offset, RI.cullorigin );
 	}
