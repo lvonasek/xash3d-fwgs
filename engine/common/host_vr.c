@@ -478,18 +478,25 @@ bool Host_VRConfig()
 	static float lastMSAA = 1;
 	static float lastSupersampling = 1;
 	bool gameMode = Cvar_VariableValue("vr_gamemode") > 0.5f;
-	float currentMSAA = gameMode ? Cvar_VariableValue("vr_msaa") + 1.0f : 1.0f;
-	float currentSupersampling = gameMode ? Cvar_VariableValue("vr_supersampling") : 1.0f;
-	if ((fabs(lastMSAA - currentMSAA) > 0.01f) || (fabs(lastSupersampling - currentSupersampling) > 0.01f)) {
+	float currentMSAA = Cvar_VariableValue("vr_msaa") + 1.0f;
+	float currentSupersampling = Cvar_VariableValue("vr_supersampling");
+	if (gameMode && ((fabs(lastMSAA - currentMSAA) > 0.01f) || (fabs(lastSupersampling - currentSupersampling) > 0.01f))) {
 		int width, height;
 		VR_SetConfig(VR_CONFIG_VIEWPORT_MSAA, currentMSAA);
 		VR_SetConfigFloat(VR_CONFIG_VIEWPORT_SUPERSAMPLING, currentSupersampling);
-		VR_SetConfigFloat(VR_CONFIG_CANVAS_ASPECT, gameMode ? 1.0f : 4.0f / 3.0f);
 		VR_InitRenderer(VR_GetEngine(), false);
 		VR_GetResolution(VR_GetEngine(), &width, &height);
 		VID_SaveWindowSize( width, height, true );
 		lastSupersampling = currentSupersampling;
 		lastMSAA = currentMSAA;
+	}
+	static bool lastGameMode = true;
+	if (lastGameMode != gameMode) {
+		int width, height;
+		VR_SetConfigFloat(VR_CONFIG_CANVAS_ASPECT, gameMode ? 1.0f : 4.0f / 3.0f);
+		VR_GetResolution(VR_GetEngine(), &width, &height);
+		VID_SaveWindowSize( width, height, true );
+		lastGameMode = gameMode;
 	}
 
 	// Update thumbstick deadzone

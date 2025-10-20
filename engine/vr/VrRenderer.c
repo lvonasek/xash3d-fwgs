@@ -124,10 +124,14 @@ void VR_GetResolution(engine_t* engine, int *pWidth, int *pHeight) {
 	//Force square resolution
 	if (VR_GetPlatformFlag(VR_PLATFORM_VIEWPORT_SQUARE)) {
 		*pHeight = *pWidth;
-		float aspect = VR_GetConfigFloat(VR_CONFIG_CANVAS_ASPECT);
-		if (aspect > 0) {
-			*pHeight /= aspect;
-		}
+	}
+	VR_SetConfig(VR_CONFIG_VIEWPORT_WIDTH, *pWidth);
+	VR_SetConfig(VR_CONFIG_VIEWPORT_HEIGHT, *pHeight);
+
+	//Support custom aspect ratio
+	float aspect = VR_GetConfigFloat(VR_CONFIG_CANVAS_ASPECT);
+	if (aspect > 0) {
+		*pHeight /= aspect;
 	}
 }
 
@@ -199,8 +203,8 @@ void VR_InitRenderer( engine_t* engine, bool multiview ) {
 
 	int eyeW, eyeH;
 	VR_GetResolution(engine, &eyeW, &eyeH);
-	VR_SetConfig(VR_CONFIG_VIEWPORT_WIDTH, eyeW);
-	VR_SetConfig(VR_CONFIG_VIEWPORT_HEIGHT, eyeH);
+	eyeW = VR_GetConfig(VR_CONFIG_VIEWPORT_WIDTH);
+	eyeH = VR_GetConfig(VR_CONFIG_VIEWPORT_WIDTH);
 
 	// Get the viewport configuration info for the chosen viewport configuration type.
 	engine->appState.ViewportConfig.type = XR_TYPE_VIEW_CONFIGURATION_PROPERTIES;
@@ -332,7 +336,13 @@ void VR_EndFrame( engine_t* engine, int fboIndex ) {
 		int x = vrConfig[VR_CONFIG_MOUSE_X];
 		int y = vrConfig[VR_CONFIG_MOUSE_Y];
 		int sx = vrConfig[VR_CONFIG_MOUSE_SIZE];
-		int sy = (int)((float)sx * VR_GetConfigFloat(VR_CONFIG_CANVAS_ASPECT));
+		int sy = sx;
+		int vrHeight = vrConfig[VR_CONFIG_VIEWPORT_HEIGHT];
+		float aspect = VR_GetConfigFloat(VR_CONFIG_CANVAS_ASPECT);
+		if (aspect > 0) {
+			sy *= aspect;
+			y -= vrHeight - vrHeight / aspect;
+		}
 		ovrRenderer_MouseCursor(&engine->appState.Renderer, x, y, sx, sy);
 	}
 
@@ -345,6 +355,15 @@ void VR_FinishFrame( engine_t* engine ) {
 	int layerCount = 0;
 	ovrCompositorLayer_Union layerUnion[ovrMaxLayerCount];
 	memset(layerUnion, 0, sizeof(ovrCompositorLayer_Union) * ovrMaxLayerCount);
+
+
+	//Support custom aspect ratio
+	int vrWidth = vrConfig[VR_CONFIG_VIEWPORT_WIDTH];
+	int vrHeight = vrConfig[VR_CONFIG_VIEWPORT_HEIGHT];
+	float aspect = VR_GetConfigFloat(VR_CONFIG_CANVAS_ASPECT);
+	if (aspect > 0) {
+		vrHeight /= aspect;
+	}
 
 	int vrMode = vrConfig[VR_CONFIG_MODE];
 	XrCompositionLayerProjectionView projection_layer_elements[2] = {};
@@ -364,8 +383,8 @@ void VR_FinishFrame( engine_t* engine ) {
 			projection_layer_elements[eye].subImage.swapchain = frameBuffer->ColorSwapChain.Handle;
 			projection_layer_elements[eye].subImage.imageRect.offset.x = 0;
 			projection_layer_elements[eye].subImage.imageRect.offset.y = 0;
-			projection_layer_elements[eye].subImage.imageRect.extent.width = frameBuffer->ColorSwapChain.Width;
-			projection_layer_elements[eye].subImage.imageRect.extent.height = frameBuffer->ColorSwapChain.Height;
+			projection_layer_elements[eye].subImage.imageRect.extent.width = vrWidth;
+			projection_layer_elements[eye].subImage.imageRect.extent.height = vrHeight;
 			projection_layer_elements[eye].subImage.imageArrayIndex = vrMode == VR_MODE_MONO_6DOF ? 0 : imageLayer;
 		}
 
@@ -396,8 +415,8 @@ void VR_FinishFrame( engine_t* engine ) {
 		memset(&cylinder_layer.subImage, 0, sizeof(XrSwapchainSubImage));
 		cylinder_layer.subImage.imageRect.offset.x = 0;
 		cylinder_layer.subImage.imageRect.offset.y = 0;
-		cylinder_layer.subImage.imageRect.extent.width = engine->appState.Renderer.FrameBuffer[0].ColorSwapChain.Width;
-		cylinder_layer.subImage.imageRect.extent.height = engine->appState.Renderer.FrameBuffer[0].ColorSwapChain.Height;
+		cylinder_layer.subImage.imageRect.extent.width = vrWidth;
+		cylinder_layer.subImage.imageRect.extent.height = vrHeight;
 		cylinder_layer.subImage.swapchain = engine->appState.Renderer.FrameBuffer[0].ColorSwapChain.Handle;
 		cylinder_layer.subImage.imageArrayIndex = 0;
 		cylinder_layer.pose.orientation = yaw;
