@@ -418,11 +418,13 @@ void R_SetupFrustum( void )
 	float scale = gEngfuncs.pfnGetCvarFloat("vr_worldscale");
 	if ((fabs(RI.vieworg[0] - lastPos[0]) < scale) &&
 		(fabs(RI.vieworg[1] - lastPos[1]) < scale) &&
-		(fabs(RI.vieworg[2] - lastPos[2]) > scale)) {
+		(fabs(RI.vieworg[2] - lastPos[2]) > scale / 2.0f)) {
+		gEngfuncs.Cvar_SetValue("vr_offset_z", RI.vieworg[2] - lastPos[2]);
 		RI.vieworg[2] = lastPos[2];
 	} else {
-		VectorCopy(RI.vieworg, lastPos);
+		gEngfuncs.Cvar_SetValue("vr_offset_z", 0.0f);
 	}
+	VectorCopy(RI.vieworg, lastPos);
 
 	if( !r_lockfrustum.value )
 	{
