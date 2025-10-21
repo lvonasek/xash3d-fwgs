@@ -420,6 +420,7 @@ void R_SetupFrustum( void )
 		(fabs(RI.vieworg[1] - lastPos[1]) < scale) &&
 		(fabs(RI.vieworg[2] - lastPos[2]) > scale / 2.0f)) {
 		gEngfuncs.Cvar_SetValue("vr_offset_z", RI.vieworg[2] - lastPos[2]);
+		gEngfuncs.Cvar_SetValue("vr_player_pos_z", lastPos[2]);
 		RI.vieworg[2] = lastPos[2];
 	} else {
 		gEngfuncs.Cvar_SetValue("vr_offset_z", 0.0f);
