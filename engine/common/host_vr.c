@@ -113,6 +113,7 @@ CVAR_DEFINE_AUTO( vr_button_thumbstick_dright_right_alt, "+vr_right", FCVAR_ARCH
 CVAR_DEFINE_AUTO( vr_button_thumbstick_press_right_alt, "touch_hide say;touch_hide say2;messagemode", FCVAR_ARCHIVE, "Controller mapping" );
 CVAR_DEFINE_AUTO( vr_button_trigger_right_alt, "drop", FCVAR_ARCHIVE, "Controller mapping" );
 CVAR_DEFINE_AUTO( vr_haptics_enable, "1", FCVAR_ARCHIVE, "Flag if haptics are enabled" );
+CVAR_DEFINE_AUTO( vr_motion_activator, "1", FCVAR_ARCHIVE, "0=disable, 1=stretch arm, 2=using use button" );
 CVAR_DEFINE_AUTO( vr_thumbstick_deadzone_left, "0.15", FCVAR_ARCHIVE, "Deadzone of thumbstick to filter drift" );
 CVAR_DEFINE_AUTO( vr_thumbstick_deadzone_right, "0.8", FCVAR_ARCHIVE, "Deadzone of thumbstick to filter drift" );
 CVAR_DEFINE_AUTO( vr_turn_angle, "45", FCVAR_ARCHIVE, "Angle to rotate by a thumbstick" );
@@ -149,6 +150,7 @@ void Host_VRInit( void )
 	Cvar_RegisterVariable( &vr_hmd_yaw );
 	Cvar_RegisterVariable( &vr_hmd_roll );
 	Cvar_RegisterVariable( &vr_msaa );
+	Cvar_RegisterVariable( &vr_motion_activator );
 	Cvar_RegisterVariable( &vr_offset_x );
 	Cvar_RegisterVariable( &vr_offset_y );
 	Cvar_RegisterVariable( &vr_offset_z );
@@ -554,6 +556,16 @@ void Host_VRCustomCommand( char* action )
 	else if (strcmp(action, "+attack2\n") == 0) {
 		Cvar_SetValue("vr_zoom_by_motion", 0);
 		Cbuf_AddText( action );
+	} else if (strcmp(action, "+use\n") == 0) {
+		if (fabs(Cvar_VariableValue("vr_motion_activator") - 2) < 0.1f) {
+			Cvar_SetValue("vr_hand_active", 1);
+		}
+		Cbuf_AddText( action );
+	} else if (strcmp(action, "-use\n") == 0) {
+		if (fabs(Cvar_VariableValue("vr_motion_activator") - 2) < 0.1f) {
+			Cvar_SetValue("vr_hand_active", 0);
+		}
+		Cbuf_AddText( action );
 	} else if (strcmp(action, "+vr_scoreboard\n") == 0) {
 		Cbuf_AddText( "showscoreboard2 0.213333 0.835556 0.213333 0.835556 0 0 0 128\n" );
 	} else if (strcmp(action, "-vr_scoreboard\n") == 0) {
@@ -699,12 +711,18 @@ void Host_VRMotionControls( bool zoomed, bool superzoomed, vec3_t hmdAngles, vec
 	static const char* prefixShield = "models/shield/v_";
 	bool hasDual = strcmp(weapon, "models/v_elite.mdl") == 0;
 	bool hasShield = strncmp(weapon, prefixShield, strlen(prefixShield)) == 0;
-	bool use = (forwardHand > limit * 1.1f) && !hasShield && !hasDual;
+	bool armStretching = fabs(Cvar_VariableValue("vr_motion_activator") - 1) < 0.1f;
+	bool buttonActivator = fabs(Cvar_VariableValue("vr_motion_activator") - 2) < 0.1f;
+	bool use = (forwardHand > limit * 1.1f) && !hasShield && !hasDual && armStretching;
 	if (lastUse != use) {
 		Cbuf_AddText( use ? "+use\n" : "-use\n" );
 		lastUse = use;
 	}
-	Cvar_SetValue("vr_hand_active", (forwardHand > limit) && !hasShield && !hasDual ? 1 : 0);
+	if (armStretching) {
+		Cvar_SetValue("vr_hand_active", (forwardHand > limit) && !hasShield && !hasDual ? 1 : 0);
+	} else if (!buttonActivator) {
+		Cvar_SetValue("vr_hand_active", 0);
+	}
 
 	//Knife attack
 	if ((strcmp(weapon, "models/v_knife.mdl") == 0) || (strcmp(weapon, "models/shield/v_shield_knife.mdl") == 0)) {
@@ -790,7 +808,7 @@ void Host_VRMotionControls( bool zoomed, bool superzoomed, vec3_t hmdAngles, vec
 		if (strcmp(weapon, lastWeapon) != 0) {
 			Cvar_SetValue("vr_zoom_by_motion", 0);
 		}
-		bool motionActive = Cvar_VariableValue("vr_hand_active") > limit * 0.8f;
+		bool motionActive = Cvar_VariableValue("vr_hand_active") > 0.5f;
 		static bool zoomRequested = false;
 		if (zoomRequested) {
 			Cbuf_AddText( "-attack2\n" );
