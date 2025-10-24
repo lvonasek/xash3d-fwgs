@@ -424,8 +424,8 @@ void R_SetupFrustum( void )
 		RI.vieworg[2] = lastPos[2];
 	} else {
 		gEngfuncs.Cvar_SetValue("vr_offset_z", 0.0f);
+		VectorCopy(RI.vieworg, lastPos);
 	}
-	VectorCopy(RI.vieworg, lastPos);
 
 	if( !r_lockfrustum.value )
 	{
