@@ -358,9 +358,6 @@ void R_SetupFrustum( void )
 	// build the transformation matrix for the given view angles
 	AngleVectors( RI.viewangles, RI.vforward, RI.vright, RI.vup );
 
-	// in VR sprites need the player vectors, not view vectors
-	AngleVectors( RI.viewangles, RI.pforward, RI.pright, RI.pup );
-
 	// Share player transform with the client
 	gEngfuncs.Cvar_SetValue("vr_player_dir_x", RI.vforward[0]);
 	gEngfuncs.Cvar_SetValue("vr_player_dir_y", RI.vforward[1]);
@@ -393,6 +390,11 @@ void R_SetupFrustum( void )
 		RI.viewangles[2] = gEngfuncs.pfnGetCvarFloat("vr_hmd_roll");
 	}
 
+	// in VR sprites need to use different angles
+	vec3_t angles = {};
+	angles[YAW] = RI.viewangles[YAW];
+	AngleVectors( angles, RI.pforward, RI.pright, RI.pup );
+
 	// VR camera translation
 	if (gEngfuncs.pfnGetCvarFloat("vr_6dof") > 0) {
 		vec3_t fwd = {RI.vforward[0], RI.vforward[1], 0.0f};
@@ -411,6 +413,20 @@ void R_SetupFrustum( void )
 		gEngfuncs.Cvar_SetValue("vr_offset_y", offsetY);
 	}
 
+	// Workaround for glitch on the end of ducking animation
+	static vec3_t lastPos = {};
+	float scale = gEngfuncs.pfnGetCvarFloat("vr_worldscale");
+	if ((fabs(RI.vieworg[0] - lastPos[0]) < scale) &&
+		(fabs(RI.vieworg[1] - lastPos[1]) < scale) &&
+		(fabs(RI.vieworg[2] - lastPos[2]) > scale / 2.0f)) {
+		gEngfuncs.Cvar_SetValue("vr_offset_z", RI.vieworg[2] - lastPos[2]);
+		gEngfuncs.Cvar_SetValue("vr_player_pos_z", lastPos[2]);
+		RI.vieworg[2] = lastPos[2];
+	} else {
+		gEngfuncs.Cvar_SetValue("vr_offset_z", 0.0f);
+		VectorCopy(RI.vieworg, lastPos);
+	}
+
 	if( !r_lockfrustum.value )
 	{
 		VectorCopy( RI.vieworg, RI.cullorigin );
@@ -421,8 +437,7 @@ void R_SetupFrustum( void )
 		// VR stereo separation for culling
 		vec3_t offset;
 		VectorCopy( RI.vright, offset );
-		VectorScale( offset, VR_IPD / 2.0f, offset );
-		VectorScale( offset, gEngfuncs.pfnGetCvarFloat("vr_worldscale"), offset );
+		VectorScale( offset, scale * VR_IPD / 2.0f, offset );
 		VectorScale( offset, (gEngfuncs.pfnGetCvarFloat("vr_stereo_side") - 0.5f) * 2.0f, offset );
 		VectorSubtract( RI.cullorigin, offset, RI.cullorigin );
 	}
