@@ -595,18 +595,32 @@ void Host_VRHaptics( bool rightHanded )
 		int channel = handSwapped == rightHanded ? 0 : 1;
 		IN_VR_Vibrate(weaponPower, channel, 100);
 		Cvar_SetValue("vr_haptics_weapon", 0);
-		VR_Haptics_Event(weaponPower > 0.2 ? "shotgun_fire" : "pistol_fire", channel + 1, 0, 100, 0, 0);
+		//VR_Haptics_Event(weaponPower > 0.2 ? "shotgun_fire" : "pistol_fire", channel + 1, 0, 100, 0, 0);
 	}
+
+	//If player position changes then it is like damage
+	//In DM if player gets headshot with 100HP damage then it just respawns
+	static vec3_t lastPos = {};
+	vec3_t currentPos;
+	currentPos[0] = Cvar_VariableValue("vr_player_pos_x");
+	currentPos[1] = Cvar_VariableValue("vr_player_pos_y");
+	currentPos[2] = Cvar_VariableValue("vr_player_pos_z");
+	float scale = Cvar_VariableValue("vr_worldscale");
 
 	// Damage haptics
 	static int lastHealth = 0;
-	if (lastHealth > cl.local.health) {
+	if ((lastHealth > cl.local.health) || (VectorDistance(currentPos, lastPos) > scale)) {
 		float duration = (float)(lastHealth - cl.local.health) / 50.0f;
 		IN_VR_Vibrate(duration, 0, 100);
 		IN_VR_Vibrate(duration, 1, 100);
-		VR_Haptics_Event("shield_break", 0, 0, 100, 0, 0);
+		//TODO:Remove this once sending events works
+		//this is a ugly hack just to prove the haptic service works
+		VR_Haptics_Disable();
+		VR_Haptics_Enable();
+		//VR_Haptics_Event("shield_break", 0, 0, 100, 0, 0);
 	}
 	lastHealth = cl.local.health;
+	VectorCopy(currentPos, lastPos);
 }
 
 bool Host_VRMenuInput( bool cursorActive, bool gameMode, bool swapped, int lbuttons, int rbuttons, vec2_t cursor )
