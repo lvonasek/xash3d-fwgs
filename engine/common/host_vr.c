@@ -17,8 +17,9 @@ GNU General Public License for more details.
 #include <unistd.h> // fork
 #include <stdbool.h>
 #include <VrBase.h>
-#include <VrRenderer.h>
 #include <VrInput.h>
+#include <VrHaptics.h>
+#include <VrRenderer.h>
 
 #endif
 #include "common.h"
@@ -238,6 +239,7 @@ bool Host_VRInitFrame( void )
 	if (firstFrame) {
 		VR_EnterVR(engine);
 		IN_VRInit(engine);
+		VR_Haptics_Enable();
 		firstFrame = false;
 	}
 	if (!VR_GetConfig(VR_CONFIG_VIEWPORT_VALID)) {
@@ -265,6 +267,7 @@ void Host_VRClientFrame( void )
 		VR_EndFrame(engine, eye);
 	}
 	VR_FinishFrame(engine);
+	VR_Haptics_EndFrame();
 }
 
 void Host_VRInputFrame( void )
@@ -592,6 +595,7 @@ void Host_VRHaptics( bool rightHanded )
 		int channel = handSwapped == rightHanded ? 0 : 1;
 		IN_VR_Vibrate(weaponPower, channel, 100);
 		Cvar_SetValue("vr_haptics_weapon", 0);
+		VR_Haptics_Event(weaponPower > 0.2 ? "shotgun_fire" : "pistol_fire", channel + 1, 0, 100, 0, 0);
 	}
 
 	// Damage haptics
@@ -600,6 +604,7 @@ void Host_VRHaptics( bool rightHanded )
 		float duration = (float)(lastHealth - cl.local.health) / 50.0f;
 		IN_VR_Vibrate(duration, 0, 100);
 		IN_VR_Vibrate(duration, 1, 100);
+		VR_Haptics_Event("shield_break", 0, 0, 100, 0, 0);
 	}
 	lastHealth = cl.local.health;
 }
