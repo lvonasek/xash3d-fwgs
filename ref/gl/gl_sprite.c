@@ -757,7 +757,7 @@ void R_DrawSpriteModel( cl_entity_t *e )
 		pglBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 		break;
 	case kRenderGlow:
-		pglDisable( GL_DEPTH_TEST );
+		//pglDisable( GL_DEPTH_TEST ); //This renders the glows over the players
 		// fallthrough
 	case kRenderTransAdd:
 		pglEnable( GL_BLEND );
