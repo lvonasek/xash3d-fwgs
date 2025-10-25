@@ -622,6 +622,7 @@ static void R_DrawSpriteQuad( mspriteframe_t *frame, vec3_t org, vec3_t v_right,
 
 	r_stats.c_sprite_polys++;
 
+	pglDepthMask(GL_FALSE);
 	pglBegin( GL_QUADS );
 		pglTexCoord2f( 0.0f, 1.0f );
 		VectorMA( org, frame->down * scale, v_up, point );
@@ -640,6 +641,7 @@ static void R_DrawSpriteQuad( mspriteframe_t *frame, vec3_t org, vec3_t v_right,
 		VectorMA( point, frame->right * scale, v_right, point );
 		pglVertex3fv( point );
 	pglEnd();
+	pglDepthMask(GL_TRUE);
 }
 
 static qboolean R_SpriteHasLightmap( cl_entity_t *e, int texFormat )
