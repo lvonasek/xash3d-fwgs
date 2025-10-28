@@ -1699,7 +1699,7 @@ void CL_Disconnect( void )
 void CL_Disconnect_f( void )
 {
 	if( Host_IsLocalClient( ))
-		Host_EndGame( true, "disconnected from server\n" );
+		Host_EndGame( false, "disconnected from server\n" );
 	else CL_Disconnect();
 }
 
