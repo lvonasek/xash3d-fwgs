@@ -41,6 +41,7 @@ CVAR_DEFINE_AUTO( vr_hand_yaw, "0", FCVAR_MOVEVARS, "Hand yaw angle" );
 CVAR_DEFINE_AUTO( vr_hand_roll, "0", FCVAR_MOVEVARS, "Hand roll angle" );
 CVAR_DEFINE_AUTO( vr_hand_swap, "0", FCVAR_MOVEVARS, "Hand/weapon swap during dual hand weapons" );
 CVAR_DEFINE_AUTO( vr_haptics_weapon, "0", FCVAR_MOVEVARS, "Haptics amount for the weapon" );
+CVAR_DEFINE_AUTO( vr_haptics_yaw, "0", FCVAR_ARCHIVE, "Direction from which the attack came" );
 CVAR_DEFINE_AUTO( vr_hmd_pitch, "0", FCVAR_MOVEVARS, "Camera pitch angle" );
 CVAR_DEFINE_AUTO( vr_hmd_yaw, "0", FCVAR_MOVEVARS, "Camera yaw angle" );
 CVAR_DEFINE_AUTO( vr_hmd_roll, "0", FCVAR_MOVEVARS, "Camera roll angle" );
@@ -147,6 +148,7 @@ void Host_VRInit( void )
 	Cvar_RegisterVariable( &vr_hand_swap );
 	Cvar_RegisterVariable( &vr_haptics_enable );
 	Cvar_RegisterVariable( &vr_haptics_weapon );
+	Cvar_RegisterVariable( &vr_haptics_yaw );
 	Cvar_RegisterVariable( &vr_hmd_pitch );
 	Cvar_RegisterVariable( &vr_hmd_yaw );
 	Cvar_RegisterVariable( &vr_hmd_roll );
@@ -334,7 +336,7 @@ void Host_VRInputFrame( void )
 		// No game actions when UI is shown
 		Host_VRButtonMapping(!rightHanded, 0, 0);
 	}
-	Host_VRHaptics( rightHanded );
+	Host_VRHaptics( rightHanded, weaponAngles );
 }
 
 void Host_VRAdjustInput( vec3_t handAngles, vec3_t handPosition, vec3_t hmdAngles, const vec3_t hmdPosition, vec3_t weaponAngles, vec3_t weaponPosition )
@@ -578,7 +580,7 @@ void Host_VRCustomCommand( char* action )
 	}
 }
 
-void Host_VRHaptics( bool rightHanded )
+void Host_VRHaptics( bool rightHanded, vec3_t weaponAngles )
 {
 	// Check if haptics are enabled
 	if (Cvar_VariableValue("vr_haptics_enable") < 0.5f) {
@@ -595,7 +597,7 @@ void Host_VRHaptics( bool rightHanded )
 		int channel = handSwapped == rightHanded ? 0 : 1;
 		IN_VR_Vibrate(weaponPower, channel, 100);
 		Cvar_SetValue("vr_haptics_weapon", 0);
-		//VR_Haptics_Event(weaponPower > 0.2 ? "shotgun_fire" : "pistol_fire", channel + 1, 0, 100, 0, 0);
+		VR_Haptics_Event(weaponPower > 0.2 ? "shotgun_fire" : "pistol_fire", channel + 1, 0, 100, 0, 0);
 	}
 
 	//If player position changes then it is like damage
@@ -610,14 +612,14 @@ void Host_VRHaptics( bool rightHanded )
 	// Damage haptics
 	static int lastHealth = 0;
 	if ((lastHealth > cl.local.health) || (VectorDistance(currentPos, lastPos) > scale)) {
-		float duration = (float)(lastHealth - cl.local.health) / 50.0f;
+		int damage = lastHealth - cl.local.health;
+		float duration = (float)(damage) / 50.0f;
 		IN_VR_Vibrate(duration, 0, 100);
 		IN_VR_Vibrate(duration, 1, 100);
-		//TODO:Remove this once sending events works
-		//this is a ugly hack just to prove the haptic service works
-		VR_Haptics_Disable();
-		VR_Haptics_Enable();
-		//VR_Haptics_Event("shield_break", 0, 0, 100, 0, 0);
+		int flags = damage > 50 ? 4 : 0;
+		char* event = damage > 30 ? "shotgun" : "bullet";
+		float yaw = RAD2DEG(Cvar_VariableValue("vr_haptics_yaw")) - weaponAngles[YAW];
+		VR_Haptics_Event(event, 0, flags, 100, yaw, 0);
 	}
 	lastHealth = cl.local.health;
 	VectorCopy(currentPos, lastPos);
