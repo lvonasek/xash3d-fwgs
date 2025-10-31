@@ -584,7 +584,7 @@ void Host_VRMovementEntity( bool zoomed, vec3_t handPosition, vec3_t hmdAngles, 
 void Host_VRMovementPlayer( vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponAngles, float thumbstickX, float thumbstickY );
 void Host_VRRotations( bool zoomed, vec3_t handAngles, vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponAngles, float thumbstickX, float thumbstickY );
 bool Host_VRWeaponCalibration( float thumbstickX, float thumbstickY );
-void Host_VRWeaponCrosshair();
+void Host_VRWeaponCrosshair( bool zoomed );
 
 //
 // host_state.c

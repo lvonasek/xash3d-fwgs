@@ -324,7 +324,7 @@ void Host_VRInputFrame( void )
 			right.x = vr_input[0];
 			right.y = vr_input[1];
 		}
-		Host_VRWeaponCrosshair();
+		Host_VRWeaponCrosshair(zoomed);
 		Host_VRMotionControls(zoomed, superzoomed, hmdAngles, handPosition, hmdPosition, weaponPosition);
 		Host_VRMovementPlayer(hmdAngles, hmdPosition, weaponAngles, left.x, left.y);
 		Host_VRMovementEntity(zoomed, handPosition, hmdAngles, hmdPosition, weaponPosition);
@@ -1068,7 +1068,7 @@ bool Host_VRWeaponCalibration( float thumbstickX, float thumbstickY )
 	return false;
 }
 
-void Host_VRWeaponCrosshair()
+void Host_VRWeaponCrosshair( bool zoomed )
 {
 	// Get player position and direction
 	vec3_t vecSrc, vecDir, vecEnd;
@@ -1093,7 +1093,7 @@ void Host_VRWeaponCrosshair()
 	}
 
 	// Decide if crosshair should be visible
-	bool visible = true;
+	bool visible = !zoomed;
 	const char* weapon = Cvar_VariableString("vr_weapon_pivot_name");
 	if ((strcmp(weapon, "models/v_knife.mdl") == 0) ||
 		(strcmp(weapon, "models/v_flashbang.mdl") == 0) ||
@@ -1104,11 +1104,15 @@ void Host_VRWeaponCrosshair()
 		(strcmp(weapon, "models/shield/v_shield_hegrenade.mdl") == 0) ||
 		(strcmp(weapon, "models/shield/v_shield_smokegrenade.mdl") == 0)) {
 		visible = false;
+	} else if ((strcmp(weapon, "models/v_aug.mdl") == 0) || (strcmp(weapon, "models/v_sg552.mdl") == 0)) {
+		visible = true;
 	}
 
 	// Convert the position into screen coordinates
-	vec3_t screenPos;
-	TriWorldToScreen(vecEnd, screenPos);
+	vec3_t screenPos = {};
+	if (!zoomed) {
+		TriWorldToScreen(vecEnd, screenPos);
+	}
 	Cvar_SetValue("vr_xhair_x", visible ? screenPos[0] : INT_MAX);
 	Cvar_SetValue("vr_xhair_y", visible ? screenPos[1] : INT_MAX);
 }
