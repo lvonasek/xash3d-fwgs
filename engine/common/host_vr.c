@@ -882,7 +882,7 @@ void Host_VRMovementEntity( bool zoomed, vec3_t handPosition, vec3_t hmdAngles, 
 	float handY = dx * sin(hmdYaw) + dy * cos(hmdYaw);
 	Cvar_SetValue("vr_hand_x", zoomed ? INT_MAX : handX * scale);
 	Cvar_SetValue("vr_hand_y", zoomed ? INT_MAX : handY * scale);
-	Cvar_SetValue("vr_hand_z", zoomed ? INT_MAX : (handPosition[1] - vr_hmd_offset[2]) * scale);
+	Cvar_SetValue("vr_hand_z", zoomed ? INT_MAX : (handPosition[1] - hmdPosition[1]) * scale);
 
 	// Weapon movement
 	dx = weaponPosition[0] - hmdPosition[0];
