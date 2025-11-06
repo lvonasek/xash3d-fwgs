@@ -925,7 +925,7 @@ void Host_VRMovementPlayer( vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponA
 	if ((fabs(thumbstickX) < deadzone) && (fabs(thumbstickY) < deadzone)) {
 		thumbstickX = 0;
 		thumbstickY = 0;
-		if (Cvar_VariableValue("vr_6dof") > 0) {
+		if ((Cvar_VariableValue("vr_6dof") > 0) && (Cvar_VariableValue("vr_spectator") < 0.5f)) {
 			float movementScale = 0.2f;   // How much should the movement be mapped to joystick
 			float minimalMovement = 0.3f; // Filter small movements to not spam the server
 
