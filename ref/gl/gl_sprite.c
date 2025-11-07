@@ -622,6 +622,7 @@ static void R_DrawSpriteQuad( mspriteframe_t *frame, vec3_t org, vec3_t v_right,
 
 	r_stats.c_sprite_polys++;
 
+	pglDepthMask(GL_FALSE);
 	pglBegin( GL_QUADS );
 		pglTexCoord2f( 0.0f, 1.0f );
 		VectorMA( org, frame->down * scale, v_up, point );
@@ -640,6 +641,7 @@ static void R_DrawSpriteQuad( mspriteframe_t *frame, vec3_t org, vec3_t v_right,
 		VectorMA( point, frame->right * scale, v_right, point );
 		pglVertex3fv( point );
 	pglEnd();
+	pglDepthMask(GL_TRUE);
 }
 
 static qboolean R_SpriteHasLightmap( cl_entity_t *e, int texFormat )
@@ -755,7 +757,7 @@ void R_DrawSpriteModel( cl_entity_t *e )
 		pglBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 		break;
 	case kRenderGlow:
-		pglDisable( GL_DEPTH_TEST );
+		//pglDisable( GL_DEPTH_TEST ); //This renders the glows over the players
 		// fallthrough
 	case kRenderTransAdd:
 		pglEnable( GL_BLEND );
@@ -846,6 +848,16 @@ void R_DrawSpriteModel( cl_entity_t *e )
 
 	if( psprite->facecull == SPR_CULL_NONE )
 		GL_Cull( GL_NONE );
+
+	//TODO: This is an ugly hack to remove muzzle flashes for dual weapon.
+	//We cannot render it correctly. Having a broken effect is worse than having no effect.
+	if (strcmp(gEngfuncs.pfnGetCvarString("vr_weapon_pivot_name"), "models/v_elite.mdl") == 0)
+	{
+		if (strcmp(e->model->name, "sprites/muzzleflash2.spr") == 0)
+		{
+			return;
+		}
+	}
 
 	if( oldframe == frame )
 	{

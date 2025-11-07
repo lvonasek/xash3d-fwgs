@@ -17,8 +17,9 @@ GNU General Public License for more details.
 #include <unistd.h> // fork
 #include <stdbool.h>
 #include <VrBase.h>
-#include <VrRenderer.h>
 #include <VrInput.h>
+#include <VrHaptics.h>
+#include <VrRenderer.h>
 
 #endif
 #include "common.h"
@@ -40,6 +41,7 @@ CVAR_DEFINE_AUTO( vr_hand_yaw, "0", FCVAR_MOVEVARS, "Hand yaw angle" );
 CVAR_DEFINE_AUTO( vr_hand_roll, "0", FCVAR_MOVEVARS, "Hand roll angle" );
 CVAR_DEFINE_AUTO( vr_hand_swap, "0", FCVAR_MOVEVARS, "Hand/weapon swap during dual hand weapons" );
 CVAR_DEFINE_AUTO( vr_haptics_weapon, "0", FCVAR_MOVEVARS, "Haptics amount for the weapon" );
+CVAR_DEFINE_AUTO( vr_haptics_yaw, "0", FCVAR_ARCHIVE, "Direction from which the attack came" );
 CVAR_DEFINE_AUTO( vr_hmd_pitch, "0", FCVAR_MOVEVARS, "Camera pitch angle" );
 CVAR_DEFINE_AUTO( vr_hmd_yaw, "0", FCVAR_MOVEVARS, "Camera yaw angle" );
 CVAR_DEFINE_AUTO( vr_hmd_roll, "0", FCVAR_MOVEVARS, "Camera roll angle" );
@@ -146,6 +148,7 @@ void Host_VRInit( void )
 	Cvar_RegisterVariable( &vr_hand_swap );
 	Cvar_RegisterVariable( &vr_haptics_enable );
 	Cvar_RegisterVariable( &vr_haptics_weapon );
+	Cvar_RegisterVariable( &vr_haptics_yaw );
 	Cvar_RegisterVariable( &vr_hmd_pitch );
 	Cvar_RegisterVariable( &vr_hmd_yaw );
 	Cvar_RegisterVariable( &vr_hmd_roll );
@@ -238,6 +241,7 @@ bool Host_VRInitFrame( void )
 	if (firstFrame) {
 		VR_EnterVR(engine);
 		IN_VRInit(engine);
+		VR_Haptics_Enable();
 		firstFrame = false;
 	}
 	if (!VR_GetConfig(VR_CONFIG_VIEWPORT_VALID)) {
@@ -265,6 +269,7 @@ void Host_VRClientFrame( void )
 		VR_EndFrame(engine, eye);
 	}
 	VR_FinishFrame(engine);
+	VR_Haptics_EndFrame();
 }
 
 void Host_VRInputFrame( void )
@@ -319,7 +324,7 @@ void Host_VRInputFrame( void )
 			right.x = vr_input[0];
 			right.y = vr_input[1];
 		}
-		Host_VRWeaponCrosshair();
+		Host_VRWeaponCrosshair(zoomed);
 		Host_VRMotionControls(zoomed, superzoomed, hmdAngles, handPosition, hmdPosition, weaponPosition);
 		Host_VRMovementPlayer(hmdAngles, hmdPosition, weaponAngles, left.x, left.y);
 		Host_VRMovementEntity(zoomed, handPosition, hmdAngles, hmdPosition, weaponPosition);
@@ -331,7 +336,7 @@ void Host_VRInputFrame( void )
 		// No game actions when UI is shown
 		Host_VRButtonMapping(!rightHanded, 0, 0);
 	}
-	Host_VRHaptics( rightHanded );
+	Host_VRHaptics( rightHanded, weaponAngles );
 }
 
 void Host_VRAdjustInput( vec3_t handAngles, vec3_t handPosition, vec3_t hmdAngles, const vec3_t hmdPosition, vec3_t weaponAngles, vec3_t weaponPosition )
@@ -575,7 +580,7 @@ void Host_VRCustomCommand( char* action )
 	}
 }
 
-void Host_VRHaptics( bool rightHanded )
+void Host_VRHaptics( bool rightHanded, vec3_t weaponAngles )
 {
 	// Check if haptics are enabled
 	if (Cvar_VariableValue("vr_haptics_enable") < 0.5f) {
@@ -592,16 +597,32 @@ void Host_VRHaptics( bool rightHanded )
 		int channel = handSwapped == rightHanded ? 0 : 1;
 		IN_VR_Vibrate(weaponPower, channel, 100);
 		Cvar_SetValue("vr_haptics_weapon", 0);
+		VR_Haptics_Event(weaponPower > 0.2 ? "shotgun_fire" : "pistol_fire", channel + 1, 0, 100, 0, 0);
 	}
+
+	//If player position changes then it is like damage
+	//In DM if player gets headshot with 100HP damage then it just respawns
+	static vec3_t lastPos = {};
+	vec3_t currentPos;
+	currentPos[0] = Cvar_VariableValue("vr_player_pos_x");
+	currentPos[1] = Cvar_VariableValue("vr_player_pos_y");
+	currentPos[2] = Cvar_VariableValue("vr_player_pos_z");
+	float scale = Cvar_VariableValue("vr_worldscale");
 
 	// Damage haptics
 	static int lastHealth = 0;
-	if (lastHealth > cl.local.health) {
-		float duration = (float)(lastHealth - cl.local.health) / 50.0f;
+	if ((lastHealth > cl.local.health) || (VectorDistance(currentPos, lastPos) > scale)) {
+		int damage = lastHealth - cl.local.health;
+		float duration = (float)(damage) / 50.0f;
 		IN_VR_Vibrate(duration, 0, 100);
 		IN_VR_Vibrate(duration, 1, 100);
+		int flags = damage > 50 ? 4 : 0;
+		char* event = damage > 30 ? "shotgun" : "bullet";
+		float yaw = RAD2DEG(Cvar_VariableValue("vr_haptics_yaw")) - weaponAngles[YAW];
+		VR_Haptics_Event(event, 0, flags, 100, yaw, 0);
 	}
 	lastHealth = cl.local.health;
+	VectorCopy(currentPos, lastPos);
 }
 
 bool Host_VRMenuInput( bool cursorActive, bool gameMode, bool swapped, int lbuttons, int rbuttons, vec2_t cursor )
@@ -861,7 +882,7 @@ void Host_VRMovementEntity( bool zoomed, vec3_t handPosition, vec3_t hmdAngles, 
 	float handY = dx * sin(hmdYaw) + dy * cos(hmdYaw);
 	Cvar_SetValue("vr_hand_x", zoomed ? INT_MAX : handX * scale);
 	Cvar_SetValue("vr_hand_y", zoomed ? INT_MAX : handY * scale);
-	Cvar_SetValue("vr_hand_z", zoomed ? INT_MAX : (handPosition[1] - vr_hmd_offset[2]) * scale);
+	Cvar_SetValue("vr_hand_z", zoomed ? INT_MAX : (handPosition[1] - hmdPosition[1]) * scale);
 
 	// Weapon movement
 	dx = weaponPosition[0] - hmdPosition[0];
@@ -904,7 +925,7 @@ void Host_VRMovementPlayer( vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponA
 	if ((fabs(thumbstickX) < deadzone) && (fabs(thumbstickY) < deadzone)) {
 		thumbstickX = 0;
 		thumbstickY = 0;
-		if (Cvar_VariableValue("vr_6dof") > 0) {
+		if ((Cvar_VariableValue("vr_6dof") > 0) && (Cvar_VariableValue("vr_spectator") < 0.5f)) {
 			float movementScale = 0.2f;   // How much should the movement be mapped to joystick
 			float minimalMovement = 0.3f; // Filter small movements to not spam the server
 
@@ -1018,8 +1039,8 @@ bool Host_VRWeaponCalibration( float thumbstickX, float thumbstickY )
 
 		// Write info on the screen
 		static char text[256];
-		int value = (int)Cvar_VariableValue(cvar);
-		sprintf(text, "%s: %d", cvar, value);
+		float value = Cvar_VariableValue(cvar);
+		sprintf(text, "%s: %.1f", cvar, value);
 		CL_CenterPrint(text, 0.5f);
 
 		// Changing axis
@@ -1037,8 +1058,8 @@ bool Host_VRWeaponCalibration( float thumbstickX, float thumbstickY )
 		bool changeValueDown = fabs(thumbstickY) > deadzone;
 		static bool lastChangeValueDown = false;
 		if (changeValueDown && !lastChangeValueDown) {
-			value += thumbstickY > 0 ? 1 : -1;
-			Cvar_SetValue(cvar, (float)value);
+			value += thumbstickY > 0 ? 0.5f : -0.5f;
+			Cvar_SetValue(cvar, value);
 			Cvar_SetValue("vr_weapon_calibration_update", 1);
 		}
 		lastChangeValueDown = changeValueDown;
@@ -1047,7 +1068,7 @@ bool Host_VRWeaponCalibration( float thumbstickX, float thumbstickY )
 	return false;
 }
 
-void Host_VRWeaponCrosshair()
+void Host_VRWeaponCrosshair( bool zoomed )
 {
 	// Get player position and direction
 	vec3_t vecSrc, vecDir, vecEnd;
@@ -1072,7 +1093,7 @@ void Host_VRWeaponCrosshair()
 	}
 
 	// Decide if crosshair should be visible
-	bool visible = true;
+	bool visible = !zoomed;
 	const char* weapon = Cvar_VariableString("vr_weapon_pivot_name");
 	if ((strcmp(weapon, "models/v_knife.mdl") == 0) ||
 		(strcmp(weapon, "models/v_flashbang.mdl") == 0) ||
@@ -1083,11 +1104,15 @@ void Host_VRWeaponCrosshair()
 		(strcmp(weapon, "models/shield/v_shield_hegrenade.mdl") == 0) ||
 		(strcmp(weapon, "models/shield/v_shield_smokegrenade.mdl") == 0)) {
 		visible = false;
+	} else if ((strcmp(weapon, "models/v_aug.mdl") == 0) || (strcmp(weapon, "models/v_sg552.mdl") == 0)) {
+		visible = true;
 	}
 
 	// Convert the position into screen coordinates
-	vec3_t screenPos;
-	TriWorldToScreen(vecEnd, screenPos);
+	vec3_t screenPos = {};
+	if (!zoomed) {
+		TriWorldToScreen(vecEnd, screenPos);
+	}
 	Cvar_SetValue("vr_xhair_x", visible ? screenPos[0] : INT_MAX);
 	Cvar_SetValue("vr_xhair_y", visible ? screenPos[1] : INT_MAX);
 }
