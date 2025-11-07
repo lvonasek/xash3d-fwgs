@@ -1039,8 +1039,8 @@ bool Host_VRWeaponCalibration( float thumbstickX, float thumbstickY )
 
 		// Write info on the screen
 		static char text[256];
-		int value = (int)Cvar_VariableValue(cvar);
-		sprintf(text, "%s: %d", cvar, value);
+		float value = Cvar_VariableValue(cvar);
+		sprintf(text, "%s: %.1f", cvar, value);
 		CL_CenterPrint(text, 0.5f);
 
 		// Changing axis
@@ -1058,8 +1058,8 @@ bool Host_VRWeaponCalibration( float thumbstickX, float thumbstickY )
 		bool changeValueDown = fabs(thumbstickY) > deadzone;
 		static bool lastChangeValueDown = false;
 		if (changeValueDown && !lastChangeValueDown) {
-			value += thumbstickY > 0 ? 1 : -1;
-			Cvar_SetValue(cvar, (float)value);
+			value += thumbstickY > 0 ? 0.5f : -0.5f;
+			Cvar_SetValue(cvar, value);
 			Cvar_SetValue("vr_weapon_calibration_update", 1);
 		}
 		lastChangeValueDown = changeValueDown;
