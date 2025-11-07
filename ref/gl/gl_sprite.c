@@ -849,6 +849,16 @@ void R_DrawSpriteModel( cl_entity_t *e )
 	if( psprite->facecull == SPR_CULL_NONE )
 		GL_Cull( GL_NONE );
 
+	//TODO: This is an ugly hack to remove muzzle flashes for dual weapon.
+	//We cannot render it correctly. Having a broken effect is worse than having no effect.
+	if (strcmp(gEngfuncs.pfnGetCvarString("vr_weapon_pivot_name"), "models/v_elite.mdl") == 0)
+	{
+		if (strcmp(e->model->name, "sprites/muzzleflash2.spr") == 0)
+		{
+			return;
+		}
+	}
+
 	if( oldframe == frame )
 	{
 		// draw the single non-lerped frame
