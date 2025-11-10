@@ -283,8 +283,8 @@ void Host_VRInputFrame( void )
 	XrPosef weapon = IN_VRGetPose(primaryController);
 	XrVector3f angles = XrQuaternionf_ToEulerAngles(weapon.orientation);
 	bool cursorActive = IN_VRIsActive(primaryController);
-	int lbuttons = IN_VRGetButtonState(secondaryController);
-	int rbuttons = IN_VRGetButtonState(primaryController);
+	unsigned int lbuttons = IN_VRGetButtonState(secondaryController);
+	unsigned int rbuttons = IN_VRGetButtonState(primaryController);
 	XrVector2f left = IN_VRGetJoystickState(secondaryController);
 	XrVector2f right = IN_VRGetJoystickState(primaryController);
 
@@ -316,6 +316,7 @@ void Host_VRInputFrame( void )
 
 	// In-game input
 	if (gameMode) {
+		Host_VRBUttonMaskThumbstick(left.x, left.y, &lbuttons);
 		Host_VRButtonMapping(!rightHanded, lbuttons, rbuttons);
 		if (Host_VRWeaponCalibration(right.x, right.y)) {
 			right.x = 0;
@@ -427,7 +428,7 @@ void Host_VRButtonMap( unsigned int button, int currentButtons, int lastButtons,
 	}
 }
 
-void Host_VRButtonMapping( bool swapped, int lbuttons, int rbuttons )
+void Host_VRButtonMapping( bool swapped, unsigned int lbuttons, unsigned int rbuttons )
 {
 	int leftPrimaryButton = swapped ? ovrButton_A : ovrButton_X;
 	int leftSecondaryButton = swapped ? ovrButton_B : ovrButton_Y;
@@ -471,6 +472,22 @@ void Host_VRButtonMapping( bool swapped, int lbuttons, int rbuttons )
 	Host_VRButtonMap(ovrButton_Joystick, rbuttons, lastrbuttons, "vr_button_thumbstick_press_right", alt);
 	Host_VRButtonMap(ovrButton_GripTrigger, rbuttons, lastrbuttons, "vr_button_grip_right", alt);
 	lastrbuttons = rbuttons;
+}
+
+void Host_VRBUttonMaskThumbstick( float x, float y, unsigned int* buttons )
+{
+	float deadzone = Cvar_VariableValue("vr_thumbstick_deadzone_right");
+
+	static struct timeval lastActive;
+	if ((fabs(x) > deadzone) || (fabs(y) > deadzone)) {
+		gettimeofday(&lastActive, NULL);
+	}
+	struct timeval currentTime;
+	gettimeofday(&currentTime, NULL);
+
+	if (currentTime.tv_sec - lastActive.tv_sec < 1) {
+		*buttons = *buttons & ~ovrButton_Joystick;
+	}
 }
 
 bool Host_VRConfig()
