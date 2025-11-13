@@ -31,6 +31,7 @@ GNU General Public License for more details.
 CVAR_DEFINE_AUTO( vr_camera_x, "0", FCVAR_MOVEVARS, "Offset x of the camera" );
 CVAR_DEFINE_AUTO( vr_camera_y, "0", FCVAR_MOVEVARS, "Offset y of the camera" );
 CVAR_DEFINE_AUTO( vr_camera_z, "0", FCVAR_MOVEVARS, "Offset z of the camera" );
+CVAR_DEFINE_AUTO( vr_force2d, "0", FCVAR_MOVEVARS, "Is the client forcing 2D UI mode?" );
 CVAR_DEFINE_AUTO( vr_gamemode, "0", FCVAR_MOVEVARS, "Are we in the 3D VR mode?" );
 CVAR_DEFINE_AUTO( vr_hand_active, "0", FCVAR_MOVEVARS, "Hand aiming active" );
 CVAR_DEFINE_AUTO( vr_hand_x, "0", FCVAR_MOVEVARS, "Hand position x" );
@@ -137,6 +138,7 @@ void Host_VRInit( void )
 	Cvar_RegisterVariable( &vr_camera_x );
 	Cvar_RegisterVariable( &vr_camera_y );
 	Cvar_RegisterVariable( &vr_camera_z );
+	Cvar_RegisterVariable( &vr_force2d );
 	Cvar_RegisterVariable( &vr_gamemode );
 	Cvar_RegisterVariable( &vr_hand_active );
 	Cvar_RegisterVariable( &vr_hand_x );
@@ -249,7 +251,8 @@ bool Host_VRInitFrame( void )
 		VR_SetConfigFloat(VR_CONFIG_CANVAS_DISTANCE, 5);
 		VR_SetConfig(VR_CONFIG_VIEWPORT_VALID, true);
 	}
-	bool gameMode = !host.mouse_visible && cls.state == ca_active && cls.key_dest == key_game;
+	bool force2d = Cvar_VariableValue("vr_force2d") > 0.5f;
+	bool gameMode = !force2d && !host.mouse_visible && cls.state == ca_active && cls.key_dest == key_game;
 	bool mapOverview = Cvar_VariableValue("vr_spectator") > 4.5f;
 	int vrMode = mapOverview ? VR_MODE_MONO_6DOF : VR_MODE_STEREO_6DOF;
 	int mode = gameMode ? vrMode : VR_MODE_MONO_SCREEN;
