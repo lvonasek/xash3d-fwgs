@@ -207,7 +207,7 @@ void IN_VRInit( engine_t *engine ) {
 		bindings[currBinding++] = ActionSuggestedBinding(indexLeftAction,  "/user/hand/left/input/trigger/click");
 		bindings[currBinding++] = ActionSuggestedBinding(indexRightAction,  "/user/hand/right/input/trigger/click");
 		bindings[currBinding++] = ActionSuggestedBinding(menuAction, "/user/hand/left/input/back/click");
-		bindings[currBinding++] = ActionSuggestedBinding(menuAction, "/user/hand/right/input/back/click");
+		//bindings[currBinding++] = ActionSuggestedBinding(menuAction, "/user/hand/right/input/back/click");
 	}
 	bindings[currBinding++] = ActionSuggestedBinding(buttonXAction, "/user/hand/left/input/x/click");
 	bindings[currBinding++] = ActionSuggestedBinding(buttonYAction, "/user/hand/left/input/y/click");
