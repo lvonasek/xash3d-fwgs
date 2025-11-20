@@ -341,6 +341,7 @@ void Host_VRInputFrame( void )
 
 		// No game actions when UI is shown
 		Host_VRButtonMapping(!rightHanded, 0, 0);
+		clgame.dllFuncs.pfnMoveEvent( 0, 0 );
 	}
 	Host_VRHaptics( rightHanded, weaponAngles );
 }
