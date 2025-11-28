@@ -33,8 +33,8 @@ CVAR_DEFINE_AUTO( vr_camera_y, "0", FCVAR_MOVEVARS, "Offset y of the camera" );
 CVAR_DEFINE_AUTO( vr_camera_z, "0", FCVAR_MOVEVARS, "Offset z of the camera" );
 CVAR_DEFINE_AUTO( vr_force2d, "0", FCVAR_MOVEVARS, "Is the client forcing 2D UI mode?" );
 CVAR_DEFINE_AUTO( vr_gamemode, "0", FCVAR_MOVEVARS, "Are we in the 3D VR mode?" );
-CVAR_DEFINE_AUTO( vr_hand_active, "0", FCVAR_MOVEVARS, "Hand aiming active" );
 CVAR_DEFINE_AUTO( vr_hand_click, "0", FCVAR_MOVEVARS, "Hand aiming click" );
+CVAR_DEFINE_AUTO( vr_hand_stretch, "0", FCVAR_MOVEVARS, "Hand aiming with arm stretch" );
 CVAR_DEFINE_AUTO( vr_hand_x, "0", FCVAR_MOVEVARS, "Hand position x" );
 CVAR_DEFINE_AUTO( vr_hand_y, "0", FCVAR_MOVEVARS, "Hand position y" );
 CVAR_DEFINE_AUTO( vr_hand_z, "0", FCVAR_MOVEVARS, "Hand position z" );
@@ -117,7 +117,7 @@ CVAR_DEFINE_AUTO( vr_button_thumbstick_dright_right_alt, "+vr_right", FCVAR_ARCH
 CVAR_DEFINE_AUTO( vr_button_thumbstick_press_right_alt, "touch_hide say;touch_hide say2;messagemode", FCVAR_ARCHIVE, "Controller mapping" );
 CVAR_DEFINE_AUTO( vr_button_trigger_right_alt, "drop", FCVAR_ARCHIVE, "Controller mapping" );
 CVAR_DEFINE_AUTO( vr_haptics_enable, "1", FCVAR_ARCHIVE, "Flag if haptics are enabled" );
-CVAR_DEFINE_AUTO( vr_motion_activator, "1", FCVAR_ARCHIVE, "0=disable, 1=stretch arm, 2=using use button" );
+CVAR_DEFINE_AUTO( vr_motion_activation, "3", FCVAR_ARCHIVE, "0=disable, 1=using use button, 2=stretch arm, 3=both" );
 CVAR_DEFINE_AUTO( vr_thumbstick_deadzone_left, "0.15", FCVAR_ARCHIVE, "Deadzone of thumbstick to filter drift" );
 CVAR_DEFINE_AUTO( vr_thumbstick_deadzone_right, "0.8", FCVAR_ARCHIVE, "Deadzone of thumbstick to filter drift" );
 CVAR_DEFINE_AUTO( vr_turn_angle, "45", FCVAR_ARCHIVE, "Angle to rotate by a thumbstick" );
@@ -142,8 +142,8 @@ void Host_VRInit( void )
 	Cvar_RegisterVariable( &vr_camera_z );
 	Cvar_RegisterVariable( &vr_force2d );
 	Cvar_RegisterVariable( &vr_gamemode );
-	Cvar_RegisterVariable( &vr_hand_active );
 	Cvar_RegisterVariable( &vr_hand_click );
+	Cvar_RegisterVariable( &vr_hand_stretch );
 	Cvar_RegisterVariable( &vr_hand_x );
 	Cvar_RegisterVariable( &vr_hand_y );
 	Cvar_RegisterVariable( &vr_hand_z );
@@ -158,7 +158,7 @@ void Host_VRInit( void )
 	Cvar_RegisterVariable( &vr_hmd_yaw );
 	Cvar_RegisterVariable( &vr_hmd_roll );
 	Cvar_RegisterVariable( &vr_msaa );
-	Cvar_RegisterVariable( &vr_motion_activator );
+	Cvar_RegisterVariable( &vr_motion_activation );
 	Cvar_RegisterVariable( &vr_offset_x );
 	Cvar_RegisterVariable( &vr_offset_y );
 	Cvar_RegisterVariable( &vr_offset_z );
@@ -307,7 +307,7 @@ void Host_VRInputFrame( void )
 	vec3_t weaponPosition = {weapon.position.x, weapon.position.y, weapon.position.z};
 	vec3_t handPosition = {hand.position.x, hand.position.y, hand.position.z};
 	vec3_t hmdPosition = {hmd.position.x, hmd.position.y, hmd.position.z};
-	Host_VRAdjustInput(handAngles, handPosition, hmdAngles, hmdPosition, weaponAngles, weaponPosition);
+	bool handActive = Host_VRAdjustInput(handAngles, handPosition, hmdAngles, hmdPosition, weaponAngles, weaponPosition);
 
 	// Menu control
 	vec2_t cursor = {};
@@ -333,7 +333,7 @@ void Host_VRInputFrame( void )
 			right.y = vr_input[1];
 		}
 		Host_VRWeaponCrosshair(zoomed);
-		Host_VRMotionControls(zoomed, superzoomed, hmdAngles, handPosition, hmdPosition, weaponPosition);
+		Host_VRMotionControls(zoomed, superzoomed, handActive, hmdAngles, handPosition, hmdPosition, weaponPosition);
 		Host_VRMovementPlayer(hmdAngles, hmdPosition, weaponAngles, left.x, left.y);
 		Host_VRMovementEntity(zoomed, handPosition, hmdAngles, hmdPosition, weaponPosition);
 		Host_VRRotations(zoomed, handAngles, hmdAngles, hmdPosition, weaponAngles, right.x, right.y);
@@ -348,7 +348,7 @@ void Host_VRInputFrame( void )
 	Host_VRHaptics( rightHanded, weaponAngles );
 }
 
-void Host_VRAdjustInput( vec3_t handAngles, vec3_t handPosition, vec3_t hmdAngles, const vec3_t hmdPosition, vec3_t weaponAngles, vec3_t weaponPosition )
+bool Host_VRAdjustInput( vec3_t handAngles, vec3_t handPosition, vec3_t hmdAngles, const vec3_t hmdPosition, vec3_t weaponAngles, vec3_t weaponPosition )
 {
 	// Single hand mapping when shield used
 	if (Cvar_VariableValue("vr_shielded") > 0) {
@@ -370,7 +370,13 @@ void Host_VRAdjustInput( vec3_t handAngles, vec3_t handPosition, vec3_t hmdAngle
 	}
 
 	// Two hand weapons and hand pointer
-	if (Cvar_VariableValue("vr_hand_active") > 0) {
+	bool armStretching = Cvar_VariableValue("vr_motion_activation") > 1.5f;
+	bool buttonActivator1 = fabs(Cvar_VariableValue("vr_motion_activation") - 1) < 0.1f;
+	bool buttonActivator2 = fabs(Cvar_VariableValue("vr_motion_activation") - 3) < 0.1f;
+	bool handClick = Cvar_VariableValue("vr_hand_click") > 0.5f;
+	bool handStretch = Cvar_VariableValue("vr_hand_stretch") > 0.5f;
+	bool handActive = ((buttonActivator1 || buttonActivator2) && handClick) || (armStretching && handStretch);
+	if (handActive) {
 		float dirX = hmdPosition[0] - handPosition[0];
 		float dirY = hmdPosition[2] - handPosition[2];
 		float dirZ = hmdPosition[1] - handPosition[1] - 0.15f;
@@ -393,6 +399,8 @@ void Host_VRAdjustInput( vec3_t handAngles, vec3_t handPosition, vec3_t hmdAngle
 		weaponAngles[YAW] = freecam ? hmdAngles[YAW] : 0;
 		weaponAngles[ROLL] = freecam ? hmdAngles[ROLL] : 0;
 	}
+
+	return handActive;
 }
 
 void Host_VRButtonMap( unsigned int button, int currentButtons, int lastButtons, const char* name, bool alt )
@@ -587,15 +595,11 @@ void Host_VRCustomCommand( char* action )
 		Cvar_SetValue("vr_zoom_by_motion", 0);
 		Cbuf_AddText( action );
 	} else if (strcmp(action, "+use\n") == 0) {
-		if (fabs(Cvar_VariableValue("vr_motion_activator") - 2) < 0.1f) {
-			Cvar_SetValue("vr_hand_active", 1);
+		if (strcmp(Cvar_VariableString("vr_weapon_pivot_name"), "models/v_elite.mdl") != 0) {
+			Cvar_SetValue("vr_hand_click", 1);
 		}
-		Cvar_SetValue("vr_hand_click", 1);
 		Cbuf_AddText( action );
 	} else if (strcmp(action, "-use\n") == 0) {
-		if (fabs(Cvar_VariableValue("vr_motion_activator") - 2) < 0.1f) {
-			Cvar_SetValue("vr_hand_active", 0);
-		}
 		Cvar_SetValue("vr_hand_click", 0);
 		Cbuf_AddText( action );
 	} else if (strcmp(action, "+vr_scoreboard\n") == 0) {
@@ -735,7 +739,7 @@ bool Host_VRMenuInput( bool cursorActive, bool gameMode, bool swapped, int lbutt
 	return pressedInUI;
 }
 
-void Host_VRMotionControls( bool zoomed, bool superzoomed, vec3_t hmdAngles, vec3_t handPosition, vec3_t hmdPosition, vec3_t weaponPosition)
+void Host_VRMotionControls( bool zoomed, bool superzoomed, bool motionActive, vec3_t hmdAngles, vec3_t handPosition, vec3_t hmdPosition, vec3_t weaponPosition)
 {
 	// Get information
 	static float lastLen = 0;
@@ -759,18 +763,13 @@ void Host_VRMotionControls( bool zoomed, bool superzoomed, vec3_t hmdAngles, vec
 	static const char* prefixShield = "models/shield/v_";
 	bool hasDual = strcmp(weapon, "models/v_elite.mdl") == 0;
 	bool hasShield = strncmp(weapon, prefixShield, strlen(prefixShield)) == 0;
-	bool armStretching = fabs(Cvar_VariableValue("vr_motion_activator") - 1) < 0.1f;
-	bool buttonActivator = fabs(Cvar_VariableValue("vr_motion_activator") - 2) < 0.1f;
+	bool armStretching = Cvar_VariableValue("vr_motion_activation") > 1.5f;
 	bool use = (forwardHand > limit * 1.1f) && !hasShield && !hasDual && armStretching;
 	if (lastUse != use) {
 		Cbuf_AddText( use ? "+use\n" : "-use\n" );
 		lastUse = use;
 	}
-	if (armStretching) {
-		Cvar_SetValue("vr_hand_active", (forwardHand > limit) && !hasShield && !hasDual ? 1 : 0);
-	} else if (!buttonActivator) {
-		Cvar_SetValue("vr_hand_active", 0);
-	}
+	Cvar_SetValue("vr_hand_stretch", (forwardHand > limit) && !hasShield && !hasDual ? 1 : 0);
 
 	//Knife attack
 	if ((strcmp(weapon, "models/v_knife.mdl") == 0) || (strcmp(weapon, "models/shield/v_shield_knife.mdl") == 0)) {
@@ -856,7 +855,6 @@ void Host_VRMotionControls( bool zoomed, bool superzoomed, vec3_t hmdAngles, vec
 		if (strcmp(weapon, lastWeapon) != 0) {
 			Cvar_SetValue("vr_zoom_by_motion", 0);
 		}
-		bool motionActive = Cvar_VariableValue("vr_hand_active") > 0.5f;
 		static bool zoomRequested = false;
 		if (zoomRequested) {
 			Cbuf_AddText( "-attack2\n" );
