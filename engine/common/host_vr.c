@@ -34,6 +34,7 @@ CVAR_DEFINE_AUTO( vr_camera_z, "0", FCVAR_MOVEVARS, "Offset z of the camera" );
 CVAR_DEFINE_AUTO( vr_force2d, "0", FCVAR_MOVEVARS, "Is the client forcing 2D UI mode?" );
 CVAR_DEFINE_AUTO( vr_gamemode, "0", FCVAR_MOVEVARS, "Are we in the 3D VR mode?" );
 CVAR_DEFINE_AUTO( vr_hand_active, "0", FCVAR_MOVEVARS, "Hand aiming active" );
+CVAR_DEFINE_AUTO( vr_hand_click, "0", FCVAR_MOVEVARS, "Hand aiming click" );
 CVAR_DEFINE_AUTO( vr_hand_x, "0", FCVAR_MOVEVARS, "Hand position x" );
 CVAR_DEFINE_AUTO( vr_hand_y, "0", FCVAR_MOVEVARS, "Hand position y" );
 CVAR_DEFINE_AUTO( vr_hand_z, "0", FCVAR_MOVEVARS, "Hand position z" );
@@ -142,6 +143,7 @@ void Host_VRInit( void )
 	Cvar_RegisterVariable( &vr_force2d );
 	Cvar_RegisterVariable( &vr_gamemode );
 	Cvar_RegisterVariable( &vr_hand_active );
+	Cvar_RegisterVariable( &vr_hand_click );
 	Cvar_RegisterVariable( &vr_hand_x );
 	Cvar_RegisterVariable( &vr_hand_y );
 	Cvar_RegisterVariable( &vr_hand_z );
@@ -588,11 +590,13 @@ void Host_VRCustomCommand( char* action )
 		if (fabs(Cvar_VariableValue("vr_motion_activator") - 2) < 0.1f) {
 			Cvar_SetValue("vr_hand_active", 1);
 		}
+		Cvar_SetValue("vr_hand_click", 1);
 		Cbuf_AddText( action );
 	} else if (strcmp(action, "-use\n") == 0) {
 		if (fabs(Cvar_VariableValue("vr_motion_activator") - 2) < 0.1f) {
 			Cvar_SetValue("vr_hand_active", 0);
 		}
+		Cvar_SetValue("vr_hand_click", 0);
 		Cbuf_AddText( action );
 	} else if (strcmp(action, "+vr_scoreboard\n") == 0) {
 		Cbuf_AddText( "showscoreboard2 0.213333 0.835556 0.213333 0.835556 0 0 0 128\n" );
