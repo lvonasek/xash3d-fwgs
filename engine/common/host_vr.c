@@ -583,6 +583,7 @@ void Host_VRCursor( bool cursorActive, float x, float y, vec2_t cursor )
 
 void Host_VRCustomCommand( char* action )
 {
+	static bool attackTriggered = false;
 	if (strcmp(action, "+vr_left\n") == 0) vr_input[0] = -1;
 	else if (strcmp(action, "-vr_left\n") == 0) vr_input[0] = 0;
 	else if (strcmp(action, "+vr_right\n") == 0) vr_input[0] = 1;
@@ -595,11 +596,18 @@ void Host_VRCustomCommand( char* action )
 		Cvar_SetValue("vr_zoom_by_motion", 0);
 		Cbuf_AddText( action );
 	} else if (strcmp(action, "+use\n") == 0) {
-		if (strcmp(Cvar_VariableString("vr_weapon_pivot_name"), "models/v_elite.mdl") != 0) {
+		if (strcmp(Cvar_VariableString("vr_weapon_pivot_name"), "models/v_elite.mdl") == 0) {
+			Cbuf_AddText("+attack\n");
+			attackTriggered = true;
+		} else {
 			Cvar_SetValue("vr_hand_click", 1);
 		}
 		Cbuf_AddText( action );
 	} else if (strcmp(action, "-use\n") == 0) {
+		if (attackTriggered) {
+			Cbuf_AddText("-attack\n");
+			attackTriggered = false;
+		}
 		Cvar_SetValue("vr_hand_click", 0);
 		Cbuf_AddText( action );
 	} else if (strcmp(action, "+vr_scoreboard\n") == 0) {
