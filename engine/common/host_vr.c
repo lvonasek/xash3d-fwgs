@@ -125,6 +125,7 @@ CVAR_DEFINE_AUTO( vr_turn_type, "0", FCVAR_ARCHIVE, "0 = snap turn, 1 = smooth t
 CVAR_DEFINE_AUTO( vr_msaa, "0", FCVAR_ARCHIVE, "Game rendering subpixel rendering" );
 CVAR_DEFINE_AUTO( vr_refreshrate, "0", FCVAR_ARCHIVE, "1=force 90hz refresh rate" );
 CVAR_DEFINE_AUTO( vr_righthand, "1", FCVAR_ARCHIVE, "Use right hand mapping" );
+CVAR_DEFINE_AUTO( vr_screenshake, "0", FCVAR_ARCHIVE, "Shake camera to increase the immersion" );
 CVAR_DEFINE_AUTO( vr_supersampling, "1.1", FCVAR_ARCHIVE, "Game rendering resolution" );
 CVAR_DEFINE_AUTO( vr_walkdirection, "1", FCVAR_ARCHIVE, "0=direction from controller, 1=direction from HMD" );
 CVAR_DEFINE_AUTO( vr_weapon_restore, "1", FCVAR_ARCHIVE, "0=keep models/alignment, 1=restore models/alignment" );
@@ -172,6 +173,7 @@ void Host_VRInit( void )
 	Cvar_RegisterVariable( &vr_player_yaw );
 	Cvar_RegisterVariable( &vr_refreshrate );
 	Cvar_RegisterVariable( &vr_righthand );
+	Cvar_RegisterVariable( &vr_screenshake );
 	Cvar_RegisterVariable( &vr_shielded );
 	Cvar_RegisterVariable( &vr_spectator );
 	Cvar_RegisterVariable( &vr_stereo_side );
