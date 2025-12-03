@@ -47,6 +47,7 @@ CVAR_DEFINE_AUTO( vr_haptics_yaw, "0", FCVAR_ARCHIVE, "Direction from which the 
 CVAR_DEFINE_AUTO( vr_hmd_pitch, "0", FCVAR_MOVEVARS, "Camera pitch angle" );
 CVAR_DEFINE_AUTO( vr_hmd_yaw, "0", FCVAR_MOVEVARS, "Camera yaw angle" );
 CVAR_DEFINE_AUTO( vr_hmd_roll, "0", FCVAR_MOVEVARS, "Camera roll angle" );
+CVAR_DEFINE_AUTO( vr_ladder, "0", FCVAR_MOVEVARS, "Flag if player is on ladder" );
 CVAR_DEFINE_AUTO( vr_offset_x, "0", FCVAR_MOVEVARS, "Offset x of the camera" );
 CVAR_DEFINE_AUTO( vr_offset_y, "0", FCVAR_MOVEVARS, "Offset y of the camera" );
 CVAR_DEFINE_AUTO( vr_offset_z, "0", FCVAR_MOVEVARS, "Offset z of the camera" );
@@ -134,6 +135,7 @@ CVAR_DEFINE_AUTO( vr_xhair, "1", FCVAR_ARCHIVE, "Cross-hair rendering" );
 
 vec3_t vr_hmd_offset = {};
 vec2_t vr_input = {};
+bool vr_ducked = false;
 extern bool sdl_keyboard_requested;
 
 void Host_VRInit( void )
@@ -158,6 +160,7 @@ void Host_VRInit( void )
 	Cvar_RegisterVariable( &vr_hmd_pitch );
 	Cvar_RegisterVariable( &vr_hmd_yaw );
 	Cvar_RegisterVariable( &vr_hmd_roll );
+	Cvar_RegisterVariable( &vr_ladder );
 	Cvar_RegisterVariable( &vr_msaa );
 	Cvar_RegisterVariable( &vr_motion_activation );
 	Cvar_RegisterVariable( &vr_offset_x );
@@ -612,6 +615,12 @@ void Host_VRCustomCommand( char* action )
 		}
 		Cvar_SetValue("vr_hand_click", 0);
 		Cbuf_AddText( action );
+	} else if (strcmp(action, "+duck\n") == 0) {
+		Cbuf_AddText( action );
+		vr_ducked = true;
+	} else if (strcmp(action, "-duck\n") == 0) {
+		Cbuf_AddText( action );
+		vr_ducked = false;
 	} else if (strcmp(action, "+vr_scoreboard\n") == 0) {
 		Cbuf_AddText( "showscoreboard2 0.213333 0.835556 0.213333 0.835556 0 0 0 128\n" );
 	} else if (strcmp(action, "-vr_scoreboard\n") == 0) {
@@ -984,15 +993,42 @@ void Host_VRMovementPlayer( vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponA
 				move6DoF = true;
 			}
 		}
-	} else if (Cvar_VariableValue("vr_walkdirection") > 0.5f) {
+	} else if (Cvar_VariableValue("vr_spectator") < 0.5f) {
+		float yaw = 0;
 		float dx = thumbstickX;
 		float dy = thumbstickY;
-		float yaw = hmdYaw - DEG2RAD(weaponAngles[YAW]);
-		if (Cvar_VariableValue("vr_spectator") < 0.5f) {
-			thumbstickX = dx * cos(yaw) - dy * sin(yaw);
-			thumbstickY = dx * sin(yaw) + dy * cos(yaw);
+
+		// Detect ladder direction
+		static bool wasOnLadder = false;
+		static float enterLadderYaw = 0;
+		bool isOnLadder = Cvar_VariableValue("vr_ladder") > 0.5f;
+		if (isOnLadder && !wasOnLadder) {
+			enterLadderYaw = DEG2RAD(weaponAngles[YAW]);
 		}
+		wasOnLadder = isOnLadder;
+
+		// Limit ladder movement
+		if (isOnLadder) {
+			float diff = enterLadderYaw - DEG2RAD(weaponAngles[YAW]);
+			while (diff > M_PI) diff -= M_PI2;
+			while (diff <-M_PI) diff += M_PI2;
+			if (fabs(diff) > DEG2RAD(15)) {
+				dx = 0;
+				dy = 0;
+			} else if (!vr_ducked) {
+				dx = 0;
+			}
+		}
+
+		// Apply walk direction
+		else if (Cvar_VariableValue("vr_walkdirection") > 0.5f) {
+			yaw = hmdYaw - DEG2RAD(weaponAngles[YAW]);
+		}
+		thumbstickX = dx * cos(yaw) - dy * sin(yaw);
+		thumbstickY = dx * sin(yaw) + dy * cos(yaw);
 	}
+
+	// Update client
 	clgame.dllFuncs.pfnMoveEvent( thumbstickY, thumbstickX );
 	VectorCopy(currentPosition, lastPosition);
 	lastMove6Dof = move6DoF;
