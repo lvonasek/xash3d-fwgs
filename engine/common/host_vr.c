@@ -691,17 +691,9 @@ bool Host_VRMenuInput( bool cursorActive, bool gameMode, bool swapped, int lbutt
 	}
 	hadFocus = hasFocus;
 
-	// Deactivate temporary input when client restored focus
-	static struct timeval lastFocus;
-	if (hasFocus) {
-		gettimeofday(&lastFocus, NULL);
-	}
-	struct timeval currentTime;
-	gettimeofday(&currentTime, NULL);
-
 	// Get event type
 	touchEventType t = event_motion;
-	bool down = rbuttons & ovrButton_Trigger && (currentTime.tv_sec - lastFocus.tv_sec < 2);
+	bool down = rbuttons & ovrButton_Trigger;
 	static bool pressedInUI = false;
 	static bool lastDown = false;
 	if (down && !lastDown) {
