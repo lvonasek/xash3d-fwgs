@@ -200,6 +200,7 @@ typedef enum host_status_e
 	HOST_ERR_FATAL,	// sys error
 	HOST_SLEEP,	// sleeped by different reason, e.g. minimize window
 	HOST_NOFOCUS,	// same as HOST_FRAME, but disable mouse
+	HOST_NOFOCUS_VR,// same as HOST_FRAME, used for special cases
 	HOST_CRASHED	// an exception handler called
 } host_status_t;
 
@@ -571,15 +572,16 @@ void Host_VRInit( void );
 bool Host_VRInitFrame( void );
 void Host_VRClientFrame( void );
 void Host_VRInputFrame( void );
-void Host_VRAdjustInput(  vec3_t handAngles, vec3_t handPosition, vec3_t hmdAngles, const vec3_t hmdPosition, vec3_t weaponAngles, vec3_t weaponPosition );
+bool Host_VRAdjustInput(  vec3_t handAngles, vec3_t handPosition, vec3_t hmdAngles, const vec3_t hmdPosition, vec3_t weaponAngles, vec3_t weaponPosition );
 void Host_VRButtonMap( unsigned int button, int currentButtons, int lastButtons, const char* name, bool alt );
-void Host_VRButtonMapping( bool swapped, int lbuttons, int rbuttons );
+void Host_VRButtonMapping( bool swapped, unsigned int lbuttons, unsigned int rbuttons );
+void Host_VRBUttonMaskThumbstick( float x, float y, unsigned int* buttons );
 bool Host_VRConfig();
 void Host_VRCursor( bool cursorActive, float x, float y, vec2_t cursor );
 void Host_VRCustomCommand( char* action );
 void Host_VRHaptics( bool rightHanded, vec3_t weaponAngles );
 bool Host_VRMenuInput( bool cursorActive, bool gameMode, bool swapped, int lbuttons, int rbuttons, vec2_t cursor );
-void Host_VRMotionControls( bool zoomed, bool superzoomed, vec3_t hmdAngles, vec3_t handPosition, vec3_t hmdPosition, vec3_t weaponPosition );
+void Host_VRMotionControls( bool zoomed, bool superzoomed, bool motionActive, vec3_t hmdAngles, vec3_t handPosition, vec3_t hmdPosition, vec3_t weaponPosition );
 void Host_VRMovementEntity( bool zoomed, vec3_t handPosition, vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponPosition );
 void Host_VRMovementPlayer( vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponAngles, float thumbstickX, float thumbstickY );
 void Host_VRRotations( bool zoomed, vec3_t handAngles, vec3_t hmdAngles, vec3_t hmdPosition, vec3_t weaponAngles, float thumbstickX, float thumbstickY );

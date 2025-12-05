@@ -858,6 +858,14 @@ void R_DrawSpriteModel( cl_entity_t *e )
 			return;
 		}
 	}
+	//The same as for dual weapon, the effect isn't correct.
+	char* prefixShield = "models/shield/v_";
+	if (strncmp(gEngfuncs.pfnGetCvarString("vr_weapon_pivot_name"), prefixShield, strlen(prefixShield)) == 0) {
+		if (strcmp(e->model->name, "sprites/muzzleflash2.spr") == 0)
+		{
+			return;
+		}
+	}
 
 	if( oldframe == frame )
 	{
