@@ -351,7 +351,7 @@ static void SDLash_ActiveEvent( int gain )
 			IOS_StartBackgroundTask();
 		}
 #endif
-		host.status = HOST_FRAME;//HOST_NOFOCUS;
+		host.status = HOST_NOFOCUS_VR;//HOST_NOFOCUS;
 
 		if( cls.key_dest == key_game )
 		{

@@ -2090,7 +2090,7 @@ int IN_TouchEvent( touchEventType type, int fingerID, float x, float y, float dx
 				x1 = 0.0f;
 			}
 
-			if( cls.key_dest == key_console )
+			/*if( cls.key_dest == key_console )
 			{
 				static float y1 = 0;
 				y1 += dy;
@@ -2128,7 +2128,7 @@ int IN_TouchEvent( touchEventType type, int fingerID, float x, float y, float dx
 					Key_Message( K_ESCAPE );
 				x1 = 0.0f;
 				return 0;
-			}
+			}*/
 		}
 		UI_MouseMove( x * refState.width, y * refState.height );
 

@@ -317,7 +317,7 @@ void Host_VRInputFrame( void )
 	// Menu control
 	vec2_t cursor = {};
 	bool gameMode = Host_VRConfig();
-	Host_VRCursor(cursorActive, angles.x, angles.y, cursor);
+	Host_VRCursor(cursorActive && (cls.key_dest != key_console), angles.x, angles.y, cursor);
 	bool pressedInUI = Host_VRMenuInput(cursorActive, gameMode, !rightHanded, lbuttons, rbuttons, cursor);
 
 	// Do not pass button actions which started in UI
@@ -680,7 +680,7 @@ bool Host_VRMenuInput( bool cursorActive, bool gameMode, bool swapped, int lbutt
 	// Send enter when Keyboard released
 	static bool hadFocus = true;
 	static bool keyboardShown = false;
-	bool hasFocus = host.status != HOST_NOFOCUS;
+	bool hasFocus = host.status != HOST_NOFOCUS_VR;
 	if (!hadFocus && hasFocus && keyboardShown) {
 		if( cls.key_dest == key_console )
 			Key_Console( K_ENTER );
@@ -733,6 +733,15 @@ bool Host_VRMenuInput( bool cursorActive, bool gameMode, bool swapped, int lbutt
 		Key_Event(K_ESCAPE, false);
 	}
 	lastEscape = escape;
+
+	// Console scrolling
+	if (cls.key_dest == key_console) {
+		if (rbuttons & ovrButton_Down) {
+			Con_PageDown(1);
+		} else if (rbuttons & ovrButton_Up) {
+			Con_PageUp(1);
+		}
+	}
 
 	// Thumbstick close key
 	bool thumbstick = lbuttons & ovrButton_Joystick;

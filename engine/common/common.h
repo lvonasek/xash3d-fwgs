@@ -200,6 +200,7 @@ typedef enum host_status_e
 	HOST_ERR_FATAL,	// sys error
 	HOST_SLEEP,	// sleeped by different reason, e.g. minimize window
 	HOST_NOFOCUS,	// same as HOST_FRAME, but disable mouse
+	HOST_NOFOCUS_VR,// same as HOST_FRAME, used for special cases
 	HOST_CRASHED	// an exception handler called
 } host_status_t;
 
